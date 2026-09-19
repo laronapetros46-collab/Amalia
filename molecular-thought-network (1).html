@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Molecular Thought Network</title>
+<meta name="color-scheme" content="dark">
+
+<!-- Typefaces: a quiet grotesk for interface chrome, a literary serif for the writing itself -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   A cold, dark instrument-panel palette — the network itself
+   supplies the only real color. Amber is reserved for the one
+   moment that needs it: the thing the user currently has open.
+   ============================================================ */
+:root{
+  --bg-0:#070a10;
+  --bg-1:#0a0e16;
+  --bg-2:#0d1219;
+  --bg-vignette: radial-gradient(ellipse at 50% 38%, #101826 0%, #0a0e16 46%, #05070b 100%);
+
+  --line:            rgba(151,176,204,0.26);
+  --line-soft:        rgba(151,176,204,0.13);
+  --line-strong:      rgba(190,210,230,0.55);
+
+  --node-fill:        #cddced;
+  --node-fill-dim:    #8296ab;
+  --node-glow:        rgba(140,190,220,0.55);
+  --node-ring:        rgba(180,205,225,0.4);
+
+  --accent:           #d9a05c;
+  --accent-soft:      rgba(217,160,92,0.28);
+  --accent-glow:      rgba(217,160,92,0.55);
+
+  --text-0:           #eef2f6;
+  --text-1:           #aab6c4;
+  --text-2:           #6c7889;
+
+  --panel-bg:         rgba(11,15,22,0.82);
+  --panel-border:     rgba(151,176,204,0.14);
+  --panel-blur:       18px;
+
+  --danger:           #c96b5e;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --ease: cubic-bezier(.22,.9,.3,1);
+  --dur-fast: 180ms;
+  --dur-med: 420ms;
+  --dur-slow: 900ms;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{
+  margin:0; padding:0; width:100%; height:100%;
+  background:var(--bg-0);
+  overflow:hidden;
+  font-family:'IBM Plex Sans', system-ui, sans-serif;
+  color:var(--text-0);
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app{ position:fixed; inset:0; background:var(--bg-vignette); }
+
+/* faint drifting field of background particles — depth, not decoration */
+#particle-field{
+  position:absolute; inset:0; pointer-events:none; overflow:hidden;
+}
+.particle{
+  position:absolute; border-radius:50%;
+  background:radial-gradient(circle, var(--star-color, rgba(180,205,230,0.9)) 0%, rgba(180,205,230,0) 72%);
+  will-change:transform;
+}
+@keyframes drift{
+  0%{ transform:translate(0,0); }
+  50%{ transform:translate(var(--dx), var(--dy)); }
+  100%{ transform:translate(0,0); }
+}
+@keyframes twinkle{
+  0%,100%{ opacity:var(--star-dim, 0.18); }
+  50%{ opacity:var(--star-bright, 0.8); }
+}
+
+/* soft, low-contrast clouds of color that a few star clusters gather near —
+   these never compete with the network, only add depth behind it */
+.nebula{
+  position:absolute; border-radius:50%; pointer-events:none;
+  filter:blur(min(9vw, 70px));
+  mix-blend-mode:screen;
+  will-change:transform;
+  animation: nebula-drift linear infinite;
+}
+@keyframes nebula-drift{
+  0%{ transform:translate(0,0) scale(1); }
+  50%{ transform:translate(var(--ndx), var(--ndy)) scale(1.07); }
+  100%{ transform:translate(0,0) scale(1); }
+}
+
+svg#network-svg{
+  position:absolute; inset:0; width:100%; height:100%; display:block;
+  touch-action:none;
+  cursor:grab;
+}
+svg#network-svg.panning{ cursor:grabbing; }
+
+/* ============================================================
+   HEADER / BRAND
+   ============================================================ */
+#brand{
+  position:absolute; top:0; left:0; padding:22px 24px;
+  pointer-events:none; z-index:5;
+  display:flex; flex-direction:column; gap:2px;
+}
+#brand .mark{
+  font-size:14.5px; letter-spacing:0.02em; color:var(--text-0);
+  font-weight:500;
+}
+#brand .sub{
+  font-size:11.5px; color:var(--text-2); letter-spacing:0.02em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============================================================
+   TOOLBAR — bottom-anchored instrument dock
+   ============================================================ */
+#toolbar{
+  position:absolute; left:50%; bottom:20px; transform:translateX(-50%);
+  z-index:20;
+  display:flex; align-items:center; gap:2px;
+  padding:6px; border-radius:16px;
+  background:var(--panel-bg);
+  border:1px solid var(--panel-border);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+  box-shadow: 0 12px 40px -12px rgba(0,0,0,0.6);
+  max-width:calc(100vw - 24px);
+  overflow-x:auto; scrollbar-width:none;
+}
+#toolbar::-webkit-scrollbar{ display:none; }
+.tool-btn{
+  position:relative;
+  width:44px; height:44px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:none; border-radius:11px;
+  color:var(--text-1); cursor:pointer;
+  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.tool-btn svg{ width:19px; height:19px; }
+.tool-btn:hover{ color:var(--text-0); background:rgba(151,176,204,0.09); }
+.tool-btn:active{ transform:scale(0.92); }
+.tool-btn.active{ color:var(--bg-0); background:var(--accent); }
+.tool-btn.danger:hover{ color:var(--danger); background:rgba(201,107,94,0.12); }
+.tool-btn:disabled{ opacity:0.28; cursor:default; pointer-events:none; }
+.tool-sep{ width:1px; height:24px; background:var(--panel-border); margin:0 4px; flex-shrink:0; }
+
+#btn-sound .wave{ opacity:0.25; transition:opacity var(--dur-fast) var(--ease); }
+#btn-sound.active .wave{ opacity:1; }
+
+.tool-btn[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
+  background:#12161f; color:var(--text-0); font-size:11.5px; white-space:nowrap;
+  padding:5px 9px; border-radius:7px; border:1px solid var(--panel-border);
+  opacity:0; pointer-events:none; transition:opacity var(--dur-fast) var(--ease);
+}
+@media (hover:hover){
+  .tool-btn[data-tip]:hover::after{ opacity:1; transition-delay:400ms; }
+}
+
+/* status strip shown during connect-mode */
+#mode-banner{
+  position:absolute; left:50%; bottom:82px; transform:translateX(-50%) translateY(6px);
+  z-index:19; padding:9px 16px; border-radius:10px;
+  background:var(--panel-bg); border:1px solid var(--accent-soft);
+  color:var(--text-0); font-size:12.5px; letter-spacing:0.01em;
+  opacity:0; pointer-events:none; transition:opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  backdrop-filter:blur(var(--panel-blur));
+  display:flex; align-items:center; gap:8px;
+}
+#mode-banner.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+#mode-banner .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse-dot 1.4s ease-in-out infinite; }
+@keyframes pulse-dot{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+
+/* ============================================================
+   EDITOR PANEL
+   ============================================================ */
+#editor-panel{
+  position:absolute; top:0; right:0; height:100%; width:360px; max-width:88vw;
+  background:var(--panel-bg);
+  border-left:1px solid var(--panel-border);
+  backdrop-filter:blur(var(--panel-blur));
+  -webkit-backdrop-filter:blur(var(--panel-blur));
+  z-index:30;
+  transform:translateX(100%);
+  transition:transform var(--dur-med) var(--ease);
+  display:flex; flex-direction:column;
+}
+#editor-panel.open{ transform:translateX(0); }
+
+.panel-head{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:20px 20px 14px;
+  border-bottom:1px solid var(--panel-border);
+  flex-shrink:0;
+}
+.panel-head .meta{ display:flex; flex-direction:column; gap:4px; }
+.panel-head .state-label{
+  font-size:10.5px; letter-spacing:0.06em; color:var(--accent);
+  display:flex; align-items:center; gap:6px;
+}
+.panel-head .state-label .glyph{ font-size:13px; line-height:1; }
+.panel-head .timestamp{ font-size:11px; color:var(--text-2); }
+#panel-close{
+  background:none; border:none; color:var(--text-2); cursor:pointer;
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; transition:background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  flex-shrink:0;
+}
+#panel-close:hover{ background:rgba(151,176,204,0.1); color:var(--text-0); }
+
+.panel-body{ padding:18px 20px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px; }
+
+.field label{
+  display:block; font-size:10.5px; letter-spacing:0.06em; color:var(--text-2);
+  margin-bottom:7px;
+}
+#title-input{
+  width:100%; background:transparent; border:none; border-bottom:1px solid var(--panel-border);
+  color:var(--text-0); font-family:'Source Serif 4', serif; font-size:21px; font-weight:500;
+  padding:2px 0 8px; outline:none; transition:border-color var(--dur-fast) var(--ease);
+}
+#title-input:focus{ border-bottom-color:var(--accent); }
+#title-input::placeholder{ color:var(--text-2); font-style:italic; }
+
+#content-input{
+  width:100%; min-height:220px; resize:vertical; background:rgba(255,255,255,0.02);
+  border:1px solid var(--panel-border); border-radius:var(--radius-sm);
+  color:var(--text-0); font-family:'Source Serif 4', serif; font-size:15.5px; line-height:1.65;
+  padding:12px 13px; outline:none; transition:border-color var(--dur-fast) var(--ease);
+}
+#content-input:focus{ border-color:var(--accent-soft); }
+#content-input::placeholder{ color:var(--text-2); font-style:italic; font-family:'IBM Plex Sans',sans-serif; }
+
+.field-hint{ font-size:11px; color:var(--text-2); margin-top:6px; }
+
+.panel-stats{
+  display:flex; gap:18px; font-size:11.5px; color:var(--text-1);
+  padding-top:2px;
+}
+.panel-stats b{ color:var(--text-0); font-weight:500; font-variant-numeric:tabular-nums; }
+
+.panel-actions{
+  display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--panel-border); flex-shrink:0;
+}
+.btn{
+  font-family:inherit; font-size:12.5px; letter-spacing:0.01em; cursor:pointer;
+  padding:10px 16px; border-radius:9px; border:1px solid var(--panel-border);
+  background:rgba(255,255,255,0.02); color:var(--text-1);
+  transition:all var(--dur-fast) var(--ease);
+  display:flex; align-items:center; justify-content:center; gap:6px; flex:1;
+}
+.btn:hover{ color:var(--text-0); border-color:var(--line-strong); }
+.btn.primary{ background:var(--accent); border-color:var(--accent); color:#1a1206; font-weight:500; }
+.btn.primary:hover{ filter:brightness(1.08); }
+.btn.ghost-danger{ color:var(--danger); }
+.btn.ghost-danger:hover{ background:rgba(201,107,94,0.1); border-color:rgba(201,107,94,0.4); }
+.btn.saved{ background:#5c8f6d; border-color:#5c8f6d; color:#0d1a10; }
+
+/* saved-flash pulse on the save button */
+@keyframes save-flash{ 0%{ transform:scale(1);} 40%{ transform:scale(0.96);} 100%{ transform:scale(1);} }
+.btn.flash{ animation:save-flash 320ms var(--ease); }
+
+/* ============================================================
+   CONFIRM MODAL + TOASTS
+   ============================================================ */
+#modal-veil{
+  position:fixed; inset:0; background:rgba(5,7,11,0.55); backdrop-filter:blur(3px);
+  z-index:50; opacity:0; pointer-events:none; transition:opacity var(--dur-fast) var(--ease);
+  display:flex; align-items:center; justify-content:center;
+}
+#modal-veil.show{ opacity:1; pointer-events:auto; }
+#confirm-modal{
+  width:300px; max-width:88vw; background:#12161f; border:1px solid var(--panel-border);
+  border-radius:var(--radius-md); padding:20px; box-shadow:0 24px 60px -20px rgba(0,0,0,0.7);
+  transform:translateY(8px) scale(0.98); opacity:0; transition:all var(--dur-fast) var(--ease);
+}
+#modal-veil.show #confirm-modal{ transform:translateY(0) scale(1); opacity:1; }
+#confirm-modal p{ margin:0 0 16px; font-size:14px; color:var(--text-0); line-height:1.5; }
+#confirm-modal .row{ display:flex; gap:8px; }
+
+#toast-host{
+  position:absolute; top:20px; left:50%; transform:translateX(-50%);
+  z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center;
+  pointer-events:none;
+}
+.toast{
+  background:#12161f; border:1px solid var(--panel-border); color:var(--text-0);
+  font-size:12.5px; padding:9px 16px; border-radius:9px;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);
+  opacity:0; transform:translateY(-8px); transition:all var(--dur-fast) var(--ease);
+}
+.toast.show{ opacity:1; transform:translateY(0); }
+
+/* ============================================================
+   SVG NODE / BOND STYLING
+   ============================================================ */
+.bond-line{
+  stroke:var(--line); stroke-width:1.2; fill:none; stroke-linecap:round;
+  transition:stroke var(--dur-fast) var(--ease), stroke-width var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+  cursor:pointer;
+}
+.bond-hit{ stroke:transparent; stroke-width:16; fill:none; cursor:pointer; }
+.bond-line.selected{ stroke:var(--accent); stroke-width:1.8; }
+.bond-line:hover{ stroke:var(--line-strong); }
+
+.node-group{ cursor:pointer; }
+.node-core{
+  fill:var(--node-fill);
+  transition:r var(--dur-med) var(--ease), fill var(--dur-fast) var(--ease);
+}
+.node-ring{
+  fill:none; stroke:var(--node-ring); stroke-width:1;
+  transition:r var(--dur-med) var(--ease), stroke var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.node-ring-outer{
+  fill:none; stroke:var(--node-ring); stroke-width:0.75; opacity:0.55;
+  transition:r var(--dur-med) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.node-label{
+  fill:var(--text-1); font-family:'IBM Plex Sans', sans-serif; font-size:11px;
+  text-anchor:middle; pointer-events:none; user-select:none;
+  transition:fill var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.node-group.selected .node-core{ fill:var(--accent); }
+.node-group.selected .node-ring{ stroke:var(--accent-glow); }
+.node-group.selected .node-label{ fill:var(--text-0); }
+.node-group.pending .node-core{ fill:var(--accent); }
+.node-group.pending .node-ring-outer{ stroke:var(--accent); opacity:0.9; }
+
+.node-glow-core{ filter:url(#soft-glow); }
+.node-group.selected .node-glow-core{ filter:url(#soft-glow-strong); }
+
+/* entrance / pop animation applied via inline transform, transition handles it */
+.node-group{ transition: opacity var(--dur-slow) var(--ease); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 720px){
+  #brand{ padding:16px 14px; }
+  #brand .mark{ font-size:13px; }
+  #editor-panel{
+    top:auto; bottom:0; right:0; left:0; width:100%; max-width:100%;
+    height:auto; max-height:72vh;
+    border-left:none; border-top:1px solid var(--panel-border);
+    border-radius:18px 18px 0 0;
+    transform:translateY(100%);
+  }
+  #editor-panel.open{ transform:translateY(0); }
+  #toolbar{ bottom:calc(14px + env(safe-area-inset-bottom)); }
+  #content-input{ min-height:130px; }
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  .particle, .nebula{ animation:none; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="particle-field" aria-hidden="true"></div>
+
+  <svg id="network-svg" aria-label="Molecular thought network canvas">
+    <defs>
+      <filter id="soft-glow" x="-150%" y="-150%" width="400%" height="400%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="soft-glow-strong" x="-200%" y="-200%" width="500%" height="500%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="5.5" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <radialGradient id="node-radial" cx="35%" cy="32%" r="70%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="55%" stop-color="var(--node-fill)"/>
+        <stop offset="100%" stop-color="var(--node-fill-dim)"/>
+      </radialGradient>
+    </defs>
+    <g id="world">
+      <g id="connections-layer"></g>
+      <g id="nodes-layer"></g>
+    </g>
+  </svg>
+
+  <header id="brand" aria-hidden="true">
+    <div class="mark">Molecular Thought Network</div>
+    <div class="sub" id="stat-line">1 idea &middot; 0 bonds</div>
+  </header>
+
+  <div id="mode-banner" role="status">
+    <span class="dot"></span>
+    <span id="mode-banner-text"></span>
+  </div>
+
+  <nav id="toolbar" aria-label="Network tools">
+    <button class="tool-btn" id="btn-add" data-tip="Add node">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8.5v7M8.5 12h7"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-connect" data-tip="Bond two nodes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6.5" cy="17.5" r="3"/><circle cx="17.5" cy="6.5" r="3"/><path d="M8.7 15.3l6.6-6.6" stroke-linecap="round"/></svg>
+    </button>
+    <button class="tool-btn danger" id="btn-delete" data-tip="Delete selected" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5.2a1.2 1.2 0 011.2-1.2h3.6A1.2 1.2 0 0115 5.2V7m-8 0l.8 12a1.5 1.5 0 001.5 1.4h5.4a1.5 1.5 0 001.5-1.4L17 7"/></svg>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="btn-zoom-out" data-tip="Zoom out">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M8 10.5h5M15.3 15.3L20 20"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-zoom-in" data-tip="Zoom in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M10.5 8v5M8 10.5h5M15.3 15.3L20 20"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-reset" data-tip="Reset view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 12l3.2-3.2"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="btn-sound" data-tip="Ambient sound">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 9.8v4.4h3.3L12 18V6l-4.7 3.8H4z"/>
+        <path class="wave wave-1" d="M15 9.6a4 4 0 010 4.8"/>
+        <path class="wave wave-2" d="M17.3 7.3a7.4 7.4 0 010 9.4"/>
+      </svg>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="btn-export" data-tip="Export JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 11l4 4 4-4M5 19.5h14"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-import" data-tip="Import JSON">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 19.5h14"/></svg>
+    </button>
+    <input type="file" id="file-input" accept="application/json" class="sr-only" tabindex="-1">
+  </nav>
+
+  <!-- EDITOR PANEL -->
+  <aside id="editor-panel" aria-label="Node editor">
+    <div class="panel-head">
+      <div class="meta">
+        <div class="state-label"><span class="glyph" id="panel-glyph">&middot;</span><span id="panel-state-text">seed</span></div>
+        <div class="timestamp" id="panel-timestamp"></div>
+      </div>
+      <button id="panel-close" aria-label="Close editor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="title-input">Title</label>
+        <input id="title-input" type="text" placeholder="Name this idea&hellip;" maxlength="80" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="content-input">Content</label>
+        <textarea id="content-input" placeholder="Write what this idea holds&hellip;"></textarea>
+        <div class="field-hint">Saved to this device only, unless you export it.</div>
+      </div>
+      <div class="panel-stats">
+        <span>Bonds &middot; <b id="stat-bonds">0</b></span>
+        <span>Words &middot; <b id="stat-words">0</b></span>
+      </div>
+    </div>
+    <div class="panel-actions">
+      <button class="btn ghost-danger" id="btn-panel-delete">Delete</button>
+      <button class="btn primary" id="btn-panel-save">Save</button>
+    </div>
+  </aside>
+
+</div>
+
+<div id="modal-veil">
+  <div id="confirm-modal">
+    <p id="confirm-text">Delete this?</p>
+    <div class="row">
+      <button class="btn" id="confirm-cancel">Cancel</button>
+      <button class="btn ghost-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================================================================
+   MOLECULAR THOUGHT NETWORK — v1
+   ------------------------------------------------------------
+   SYSTEMS IN THIS FILE
+   1. Data model        — nodes[] and connections[] kept separate
+   2. Persistence        — localStorage read/write, export/import
+   3. Force simulation   — lightweight physics that settles, then rests
+   4. Renderer            — SVG draw/update of nodes & bonds
+   5. Interaction         — select, add, connect, drag, delete, pan/zoom
+   6. Editor panel         — writing interface for the selected node
+   ================================================================ */
+
+
+/* ----------------------------------------------------------------
+   1. DATA MODEL
+   A node can evolve through states over time. Only four states are
+   used today (seed → node → mature_node → branching_node); the
+   field exists so a future version can add further stages (e.g.
+   a biological growth phase) without changing the schema.
+   ---------------------------------------------------------------- */
+
+  /** @typedef {{
+   *   id:string, title:string, content:string, createdAt:string,
+   *   x:number, y:number, vx:number, vy:number, pinned:boolean,
+   *   state:string
+   * }} ThoughtNode
+   */
+
+  /** @typedef {{ id:string, source:string, target:string, createdAt:string }} Bond */
+
+  /** @type {ThoughtNode[]} */
+  let nodes = [];
+  /** @type {Bond[]} */
+  let connections = [];
+
+  let nextNodeSeq = 1;
+  let nextBondSeq = 1;
+
+  function makeId(prefix, seq){ return prefix + "-" + seq + "-" + Math.random().toString(36).slice(2,7); }
+
+  function createNode(title, x, y, parentId){
+    const n = {
+      id: makeId("node", nextNodeSeq++),
+      title: title || "",
+      content: "",
+      createdAt: new Date().toISOString(),
+      x, y, vx:0, vy:0,
+      pinned:false,
+      state:"seed"
+    };
+    nodes.push(n);
+    return n;
+  }
+
+  function createBond(sourceId, targetId){
+    const b = {
+      id: makeId("bond", nextBondSeq++),
+      source: sourceId, target: targetId,
+      createdAt: new Date().toISOString()
+    };
+    connections.push(b);
+    return b;
+  }
+
+  function bondExists(a,b){
+    return connections.some(c => (c.source===a && c.target===b) || (c.source===b && c.target===a));
+  }
+
+  function connectionCount(nodeId){
+    let n=0;
+    for(const c of connections){ if(c.source===nodeId || c.target===nodeId) n++; }
+    return n;
+  }
+
+  /** Derive a node's developmental state from its content & bonds.
+   *  Kept as a pure function so future stages can slot in cleanly. */
+  function deriveState(node){
+    const hasContent = node.content && node.content.trim().length>0;
+    const len = hasContent ? node.content.trim().length : 0;
+    const c = connectionCount(node.id);
+    if(!node.title.trim() && !hasContent && c<=1) return "seed";
+    if(c>=5 || len>240) return "branching_node";
+    if(c>=3 || len>60) return "mature_node";
+    return "node";
+  }
+
+  function refreshState(node){ node.state = deriveState(node); }
+  function refreshAllStates(){ nodes.forEach(refreshState); }
+
+  const STATE_GEOMETRY = {
+    seed:            { r: 4.5,  ring:0,    outer:0,    label:false },
+    node:            { r: 7.5,  ring:12,   outer:0,    label:true  },
+    mature_node:     { r: 11,   ring:16,   outer:21,   label:true  },
+    branching_node:  { r: 14.5, ring:20,   outer:26.5, label:true  }
+  };
+  const STATE_GLYPH = { seed:"\u00B7", node:"\u25CB", mature_node:"\u25CE", branching_node:"\u25C9" };
+  const STATE_NAME  = { seed:"seed", node:"node", mature_node:"mature node", branching_node:"branching node" };
+
+
+/* ----------------------------------------------------------------
+   2. PERSISTENCE
+   ---------------------------------------------------------------- */
+  const STORAGE_KEY = "molecular-thought-network.v1";
+
+  function serialize(){
+    return JSON.stringify({
+      version:1,
+      nodes, connections,
+      view:{ panX:view.panX, panY:view.panY, scale:view.scale }
+    });
+  }
+
+  function persist(){
+    try{ localStorage.setItem(STORAGE_KEY, serialize()); }
+    catch(e){ /* storage unavailable — fail silently, app still works in-session */ }
+  }
+
+  function loadFromStorage(){
+    let raw;
+    try{ raw = localStorage.getItem(STORAGE_KEY); } catch(e){ raw = null; }
+    if(!raw) return false;
+    try{
+      const data = JSON.parse(raw);
+      applyLoadedData(data);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function applyLoadedData(data){
+    nodes = Array.isArray(data.nodes) ? data.nodes.map(n => Object.assign({
+      vx:0, vy:0, pinned:true, state:"node"
+    }, n)) : [];
+    connections = Array.isArray(data.connections) ? data.connections : [];
+    nextNodeSeq = nodes.length + 1;
+    nextBondSeq = connections.length + 1;
+    if(data.view){
+      view.panX = data.view.panX||0; view.panY = data.view.panY||0; view.scale = data.view.scale||1;
+    }
+    refreshAllStates();
+  }
+
+  function exportJSON(){
+    const blob = new Blob([serialize()], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "molecular-thought-network-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Network exported");
+  }
+
+  function importJSONFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if(!Array.isArray(data.nodes)) throw new Error("bad shape");
+        applyLoadedData(data);
+        selectedNodeId = null; selectedBondId = null;
+        rebuildScene();
+        wake(1);
+        persist();
+        toast("Network imported");
+      }catch(e){ toast("Couldn't read that file"); }
+    };
+    reader.readAsText(file);
+  }
+
+
+/* ----------------------------------------------------------------
+   3. FORCE SIMULATION
+   A gentle, settling layout: nodes repel one another, bonds pull
+   their two ends toward a resting distance, everything damps down
+   to stillness. Pinned (user-dragged) nodes hold their position but
+   still push on their neighbours, so the rest of the structure
+   keeps its distance politely.
+   ---------------------------------------------------------------- */
+  const SIM = {
+    repulsion: 2600,
+    restLength: 138,
+    springK: 0.02,
+    centerPull: 0.0022,
+    damping: 0.82,
+    minAlpha: 0.0025
+  };
+  let alpha = 0;
+  let simRunning = false;
+
+  function wake(a){
+    alpha = Math.max(alpha, a===undefined?1:a);
+    if(!simRunning){ simRunning = true; requestAnimationFrame(simTick); }
+  }
+
+  function simTick(){
+    if(alpha < SIM.minAlpha || nodes.length===0){ simRunning=false; return; }
+
+    // repulsion between every pair (fine for the scale this app targets)
+    for(let i=0;i<nodes.length;i++){
+      const a = nodes[i];
+      let fx=0, fy=0;
+      for(let j=0;j<nodes.length;j++){
+        if(i===j) continue;
+        const b = nodes[j];
+        let dx = a.x-b.x, dy = a.y-b.y;
+        let distSq = dx*dx+dy*dy;
+        if(distSq < 1) distSq = 1;
+        const dist = Math.sqrt(distSq);
+        const force = (SIM.repulsion * alpha) / distSq;
+        fx += (dx/dist) * force;
+        fy += (dy/dist) * force;
+      }
+      if(!a.pinned){ a.vx += fx; a.vy += fy; }
+    }
+
+    // spring pull along bonds toward resting length
+    for(const c of connections){
+      const a = nodeById(c.source), b = nodeById(c.target);
+      if(!a||!b) continue;
+      let dx = b.x-a.x, dy = b.y-a.y;
+      const dist = Math.sqrt(dx*dx+dy*dy) || 0.001;
+      const diff = (dist - SIM.restLength) * SIM.springK * alpha;
+      const ux = dx/dist, uy = dy/dist;
+      if(!a.pinned){ a.vx += ux*diff; a.vy += uy*diff; }
+      if(!b.pinned){ b.vx -= ux*diff; b.vy -= uy*diff; }
+    }
+
+    // weak centering so the whole cluster doesn't drift off-screen
+    for(const n of nodes){
+      if(n.pinned) continue;
+      n.vx -= n.x * SIM.centerPull * alpha;
+      n.vy -= n.y * SIM.centerPull * alpha;
+    }
+
+    // integrate + damp
+    for(const n of nodes){
+      if(n.pinned){ n.vx=0; n.vy=0; continue; }
+      n.vx *= SIM.damping; n.vy *= SIM.damping;
+      n.x += n.vx; n.y += n.vy;
+    }
+
+    alpha *= 0.982;
+    drawFrame();
+    requestAnimationFrame(simTick);
+  }
+
+  function nodeById(id){ return nodes.find(n=>n.id===id); }
+
+
+/* ----------------------------------------------------------------
+   4. RENDERER
+   ---------------------------------------------------------------- */
+  const svg = document.getElementById("network-svg");
+  const world = document.getElementById("world");
+  const connLayer = document.getElementById("connections-layer");
+  const nodeLayer = document.getElementById("nodes-layer");
+
+  const view = { panX:0, panY:0, scale:1 };
+
+  function applyView(){
+    world.setAttribute("transform", "translate(" + view.panX + "," + view.panY + ") scale(" + view.scale + ")");
+  }
+
+  // DOM element caches keyed by id
+  const nodeEls = new Map();   // id -> {g, core, ring, outer, label}
+  const bondEls = new Map();   // id -> {line, hit}
+
+  function svgEl(tag, attrs){
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    if(attrs) for(const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function rebuildScene(){
+    connLayer.innerHTML = ""; nodeLayer.innerHTML = "";
+    nodeEls.clear(); bondEls.clear();
+    connections.forEach(c => mountBond(c, false));
+    nodes.forEach(n => mountNode(n, false));
+    drawFrame();
+    applyView();
+    updateStatLine();
+  }
+
+  function mountNode(n, animate){
+    const g = svgEl("g", { class:"node-group", "data-id":n.id, tabindex:"0", role:"button", "aria-label":"Idea: " + (n.title||"untitled") });
+    const glowWrap = svgEl("g", { class:"node-glow-core" });
+    const outer = svgEl("circle", { class:"node-ring-outer" });
+    const ring  = svgEl("circle", { class:"node-ring" });
+    const core  = svgEl("circle", { class:"node-core", fill:"url(#node-radial)" });
+    glowWrap.appendChild(outer); glowWrap.appendChild(ring); glowWrap.appendChild(core);
+    const label = svgEl("text", { class:"node-label" });
+    g.appendChild(glowWrap); g.appendChild(label);
+    nodeLayer.appendChild(g);
+    nodeEls.set(n.id, { g, core, ring, outer, label });
+
+    if(animate){
+      g.style.opacity = "0";
+      g.setAttribute("transform", "translate(" + n.x + "," + n.y + ") scale(0.2)");
+      requestAnimationFrame(() => {
+        g.style.transition = "opacity " + "480ms" + " var(--ease)";
+        g.style.opacity = "1";
+        // scale settles via the simulation redraw; give it an initial pop
+        g.animate([
+          { transform: "translate(" + n.x + "px," + n.y + "px) scale(0.2)" },
+          { transform: "translate(" + n.x + "px," + n.y + "px) scale(1.15)" },
+          { transform: "translate(" + n.x + "px," + n.y + "px) scale(1)" }
+        ], { duration:560, easing:"cubic-bezier(.22,.9,.3,1)" });
+      });
+    }
+
+    attachNodePointer(g, n.id);
+  }
+
+  function mountBond(c, animate){
+    const line = svgEl("line", { class:"bond-line", "data-id":c.id });
+    const hit  = svgEl("line", { class:"bond-hit", "data-id":c.id });
+    connLayer.appendChild(line); connLayer.appendChild(hit);
+    bondEls.set(c.id, { line, hit });
+    hit.addEventListener("pointerdown", (e) => { e.stopPropagation(); selectBond(c.id); });
+
+    if(animate){
+      const a = nodeById(c.source), b = nodeById(c.target);
+      if(a && b){
+        line.style.opacity = "0";
+        line.setAttribute("x1", a.x); line.setAttribute("y1", a.y);
+        line.setAttribute("x2", a.x); line.setAttribute("y2", a.y);
+        const start = performance.now();
+        const DUR = 520;
+        function grow(t){
+          const p = Math.min(1, (t-start)/DUR);
+          const e = 1-Math.pow(1-p,3); // ease-out cubic
+          line.setAttribute("x2", a.x + (b.x-a.x)*e);
+          line.setAttribute("y2", a.y + (b.y-a.y)*e);
+          line.style.opacity = String(Math.min(1,p*1.4));
+          if(p<1) requestAnimationFrame(grow);
+        }
+        requestAnimationFrame(grow);
+      }
+    }
+  }
+
+  function updateNodeVisual(n){
+    const els = nodeEls.get(n.id);
+    if(!els) return;
+    refreshState(n);
+    const geo = STATE_GEOMETRY[n.state];
+    els.g.setAttribute("transform", "translate(" + n.x.toFixed(2) + "," + n.y.toFixed(2) + ")");
+    els.core.setAttribute("r", geo.r);
+    if(geo.ring){ els.ring.setAttribute("r", geo.ring); els.ring.style.opacity = "1"; }
+    else { els.ring.style.opacity = "0"; }
+    if(geo.outer){ els.outer.setAttribute("r", geo.outer); els.outer.style.opacity = "0.55"; }
+    else { els.outer.style.opacity = "0"; }
+
+    if(geo.label){
+      const t = (n.title && n.title.trim()) ? n.title.trim() : "untitled";
+      els.label.textContent = truncateLabel(t);
+      els.label.setAttribute("y", geo.outer ? geo.outer + 15 : geo.ring + 15);
+      els.label.style.opacity = "1";
+    } else {
+      els.label.style.opacity = "0";
+    }
+
+    els.g.classList.toggle("selected", n.id===selectedNodeId);
+    els.g.classList.toggle("pending", n.id===pendingConnectSource);
+  }
+
+  function truncateLabel(t){ return t.length>18 ? t.slice(0,17)+"\u2026" : t; }
+
+  function updateBondVisual(c){
+    const els = bondEls.get(c.id);
+    if(!els) return;
+    const a = nodeById(c.source), b = nodeById(c.target);
+    if(!a||!b) return;
+    for(const line of [els.line, els.hit]){
+      line.setAttribute("x1", a.x); line.setAttribute("y1", a.y);
+      line.setAttribute("x2", b.x); line.setAttribute("y2", b.y);
+    }
+    els.line.classList.toggle("selected", c.id===selectedBondId);
+  }
+
+  function drawFrame(){
+    nodes.forEach(updateNodeVisual);
+    connections.forEach(updateBondVisual);
+  }
+
+
+/* ----------------------------------------------------------------
+   5. INTERACTION — selection, adding, connecting, dragging, pan/zoom
+   ---------------------------------------------------------------- */
+  let selectedNodeId = null;
+  let selectedBondId = null;
+  let pendingConnectSource = null;
+  let connectMode = false;
+
+  function selectNode(id){
+    selectedBondId = null;
+    selectedNodeId = id;
+    if(connectMode) handleConnectClick(id);
+    else openEditor(id);
+    drawFrame();
+    updateToolbarState();
+  }
+
+  function selectBond(id){
+    if(connectMode) return;
+    selectedNodeId = null;
+    selectedBondId = id;
+    closeEditor();
+    drawFrame();
+    updateToolbarState();
+  }
+
+  function deselectAll(){
+    selectedNodeId = null; selectedBondId = null;
+    closeEditor(); drawFrame(); updateToolbarState();
+  }
+
+  function updateToolbarState(){
+    document.getElementById("btn-delete").disabled = !(selectedNodeId || selectedBondId);
+    document.getElementById("btn-connect").classList.toggle("active", connectMode);
+  }
+
+  /* -- adding nodes -- */
+  function addNodeFromSelection(){
+    let parent = selectedNodeId ? nodeById(selectedNodeId) : (nodes[0] || null);
+    let x, y;
+    if(parent){
+      const angle = pickOpenAngle(parent);
+      const dist = 130 + Math.random()*36;
+      x = parent.x + Math.cos(angle)*dist;
+      y = parent.y + Math.sin(angle)*dist;
+      x += (Math.random()-0.5)*18; y += (Math.random()-0.5)*18;
+    } else {
+      x = (Math.random()-0.5)*60; y = (Math.random()-0.5)*60;
+    }
+    const n = createNode("", x, y);
+    mountNode(n, true);
+    if(parent){
+      const b = createBond(parent.id, n.id);
+      mountBond(b, true);
+      refreshState(parent); updateNodeVisual(parent);
+    }
+    refreshState(n);
+    updateStatLine();
+    wake(1);
+    selectedBondId = null;
+    selectedNodeId = n.id;
+    openEditor(n.id);
+    drawFrame();
+    updateToolbarState();
+    persist();
+    chime("node");
+  }
+
+  /** choose a placement angle away from a parent's existing neighbours,
+   *  so new nodes fan out rather than stacking on one side */
+  function pickOpenAngle(parent){
+    const neighbourAngles = [];
+    for(const c of connections){
+      let otherId = null;
+      if(c.source===parent.id) otherId = c.target;
+      else if(c.target===parent.id) otherId = c.source;
+      if(otherId){
+        const o = nodeById(otherId);
+        if(o) neighbourAngles.push(Math.atan2(o.y-parent.y, o.x-parent.x));
+      }
+    }
+    if(neighbourAngles.length===0) return Math.random()*Math.PI*2;
+    // sample candidate angles, pick the one farthest from all neighbours
+    let best = 0, bestScore = -Infinity;
+    for(let i=0;i<24;i++){
+      const cand = (i/24)*Math.PI*2;
+      let minDiff = Infinity;
+      for(const a of neighbourAngles){
+        let diff = Math.abs(angleDiff(cand,a));
+        if(diff<minDiff) minDiff = diff;
+      }
+      if(minDiff>bestScore){ bestScore=minDiff; best=cand; }
+    }
+    return best + (Math.random()-0.5)*0.3;
+  }
+  function angleDiff(a,b){ let d=a-b; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI; return d; }
+
+  /* -- connecting two existing nodes -- */
+  function toggleConnectMode(){
+    connectMode = !connectMode;
+    pendingConnectSource = null;
+    if(connectMode){
+      if(selectedNodeId){ pendingConnectSource = selectedNodeId; }
+      showModeBanner(pendingConnectSource ? "Choose a second node to bond" : "Choose the first node");
+    } else {
+      hideModeBanner();
+    }
+    drawFrame();
+    updateToolbarState();
+  }
+
+  function handleConnectClick(id){
+    if(!pendingConnectSource){
+      pendingConnectSource = id;
+      showModeBanner("Choose a second node to bond");
+      drawFrame();
+      return;
+    }
+    if(pendingConnectSource === id){
+      toast("Choose a different node");
+      return;
+    }
+    if(bondExists(pendingConnectSource, id)){
+      toast("Already bonded");
+      pendingConnectSource = null;
+      connectMode = false;
+      hideModeBanner();
+      drawFrame();
+      updateToolbarState();
+      return;
+    }
+    const b = createBond(pendingConnectSource, id);
+    mountBond(b, true);
+    const a = nodeById(pendingConnectSource), t = nodeById(id);
+    refreshState(a); refreshState(t);
+    updateStatLine();
+    wake(0.6);
+    persist();
+    chime("bond");
+    toast("Bond formed");
+    pendingConnectSource = null;
+    connectMode = false;
+    hideModeBanner();
+    drawFrame();
+    updateToolbarState();
+  }
+
+  function showModeBanner(text){
+    document.getElementById("mode-banner-text").textContent = text;
+    document.getElementById("mode-banner").classList.add("show");
+  }
+  function hideModeBanner(){ document.getElementById("mode-banner").classList.remove("show"); }
+
+  /* -- deleting -- */
+  function requestDelete(){
+    if(selectedNodeId){
+      const n = nodeById(selectedNodeId);
+      confirmModal("Delete \u201C" + (n.title||"untitled") + "\u201D and its bonds?", () => {
+        deleteNode(selectedNodeId);
+      });
+    } else if(selectedBondId){
+      confirmModal("Remove this bond?", () => { deleteBond(selectedBondId); });
+    }
+  }
+
+  function deleteNode(id){
+    const toRemove = connections.filter(c => c.source===id || c.target===id);
+    toRemove.forEach(c => {
+      const els = bondEls.get(c.id);
+      if(els){ els.line.remove(); els.hit.remove(); }
+    });
+    connections = connections.filter(c => c.source!==id && c.target!==id);
+    bondEls.forEach((v,k) => { if(!connections.find(c=>c.id===k)) bondEls.delete(k); });
+
+    const els = nodeEls.get(id);
+    if(els){ els.g.remove(); nodeEls.delete(id); }
+    nodes = nodes.filter(n => n.id!==id);
+
+    if(selectedNodeId===id) selectedNodeId = null;
+    closeEditor();
+    refreshAllStates();
+    drawFrame();
+    updateStatLine();
+    updateToolbarState();
+    wake(0.5);
+    persist();
+    toast("Idea removed");
+  }
+
+  function deleteBond(id){
+    const els = bondEls.get(id);
+    if(els){ els.line.remove(); els.hit.remove(); bondEls.delete(id); }
+    const bond = connections.find(c=>c.id===id);
+    connections = connections.filter(c => c.id!==id);
+    if(bond){
+      const a = nodeById(bond.source), b = nodeById(bond.target);
+      if(a) refreshState(a); if(b) refreshState(b);
+    }
+    selectedBondId = null;
+    drawFrame();
+    updateStatLine();
+    updateToolbarState();
+    wake(0.4);
+    persist();
+    toast("Bond removed");
+  }
+
+  /* -- dragging nodes -- */
+  let dragState = null; // {id, pointerId, movedFar}
+
+  function attachNodePointer(g, id){
+    g.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      g.setPointerCapture(e.pointerId);
+      dragState = { id, pointerId:e.pointerId, startClientX:e.clientX, startClientY:e.clientY, moved:false };
+    });
+    g.addEventListener("pointermove", (e) => {
+      if(!dragState || dragState.id!==id || dragState.pointerId!==e.pointerId) return;
+      const dxScreen = e.clientX - dragState.startClientX;
+      const dyScreen = e.clientY - dragState.startClientY;
+      if(Math.abs(dxScreen)+Math.abs(dyScreen) > 4) dragState.moved = true;
+      if(dragState.moved){
+        const n = nodeById(id);
+        const world = screenToWorld(e.clientX, e.clientY);
+        n.x = world.x; n.y = world.y;
+        n.pinned = true;
+        updateNodeVisual(n);
+        connections.forEach(c => { if(c.source===id||c.target===id) updateBondVisual(c); });
+        wake(0.3);
+      }
+    });
+    g.addEventListener("pointerup", (e) => {
+      if(!dragState || dragState.id!==id) return;
+      const wasDrag = dragState.moved;
+      dragState = null;
+      if(!wasDrag){ selectNode(id); }
+      else { persist(); }
+    });
+    g.addEventListener("keydown", (e) => {
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); selectNode(id); }
+    });
+  }
+
+  /* -- pan & zoom on the canvas -- */
+  let panState = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if(e.target !== svg) return; // ignore if a node/bond initiated it
+    deselectAllSoft();
+    panState = { startX:e.clientX, startY:e.clientY, originPanX:view.panX, originPanY:view.panY, pointerId:e.pointerId };
+    svg.setPointerCapture(e.pointerId);
+    svg.classList.add("panning");
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if(!panState || panState.pointerId!==e.pointerId) return;
+    view.panX = panState.originPanX + (e.clientX - panState.startX);
+    view.panY = panState.originPanY + (e.clientY - panState.startY);
+    applyView();
+  });
+  window.addEventListener("pointerup", (e) => {
+    if(panState && panState.pointerId===e.pointerId){
+      panState = null; svg.classList.remove("panning"); persist();
+    }
+  });
+
+  function deselectAllSoft(){
+    if(connectMode) return; // don't cancel connect flow on background tap
+    if(selectedNodeId || selectedBondId) deselectAll();
+  }
+
+  svg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = -e.deltaY * 0.0013;
+    zoomAt(e.clientX, e.clientY, delta);
+  }, { passive:false });
+
+  function zoomAt(clientX, clientY, delta){
+    const rect = svg.getBoundingClientRect();
+    const cx = clientX-rect.left, cy = clientY-rect.top;
+    const worldBefore = screenToWorld(clientX, clientY);
+    view.scale = clamp(view.scale * (1+delta), 0.25, 2.6);
+    const worldAfterScreenX = worldBefore.x*view.scale + view.panX;
+    const worldAfterScreenY = worldBefore.y*view.scale + view.panY;
+    view.panX += cx - worldAfterScreenX;
+    view.panY += cy - worldAfterScreenY;
+    applyView();
+    persist();
+  }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  function screenToWorld(clientX, clientY){
+    const rect = svg.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - view.panX)/view.scale,
+      y: (clientY - rect.top - view.panY)/view.scale
+    };
+  }
+
+  function resetView(){
+    view.panX = svg.clientWidth/2; view.panY = svg.clientHeight/2; view.scale = 1;
+    applyView(); persist();
+  }
+
+  function centerViewInitial(){
+    view.panX = svg.clientWidth/2; view.panY = svg.clientHeight/2;
+  }
+
+  /* -- pinch to zoom on touch -- */
+  let pinch = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if(e.pointerType!=="touch") return;
+    activeTouches.set(e.pointerId, {x:e.clientX,y:e.clientY});
+    if(activeTouches.size===2) pinch = startPinch();
+  });
+  const activeTouches = new Map();
+  function startPinch(){
+    const pts = [...activeTouches.values()];
+    const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    return { startDist:dist, startScale:view.scale };
+  }
+  svg.addEventListener("pointermove", (e) => {
+    if(e.pointerType!=="touch" || !activeTouches.has(e.pointerId)) return;
+    activeTouches.set(e.pointerId, {x:e.clientX,y:e.clientY});
+    if(activeTouches.size===2 && pinch){
+      const pts = [...activeTouches.values()];
+      const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      const mid = {x:(pts[0].x+pts[1].x)/2, y:(pts[0].y+pts[1].y)/2};
+      const targetScale = clamp(pinch.startScale * (dist/pinch.startDist), 0.25, 2.6);
+      const worldBefore = screenToWorld(mid.x, mid.y);
+      view.scale = targetScale;
+      const rect = svg.getBoundingClientRect();
+      view.panX += (mid.x-rect.left) - (worldBefore.x*view.scale + view.panX);
+      view.panY += (mid.y-rect.top) - (worldBefore.y*view.scale + view.panY);
+      applyView();
+    }
+  });
+  function clearTouch(e){ activeTouches.delete(e.pointerId); if(activeTouches.size<2) pinch=null; }
+  svg.addEventListener("pointerup", clearTouch);
+  svg.addEventListener("pointercancel", clearTouch);
+
+
+/* ----------------------------------------------------------------
+   6. EDITOR PANEL
+   ---------------------------------------------------------------- */
+  const panel = document.getElementById("editor-panel");
+  const titleInput = document.getElementById("title-input");
+  const contentInput = document.getElementById("content-input");
+  const panelGlyph = document.getElementById("panel-glyph");
+  const panelStateText = document.getElementById("panel-state-text");
+  const panelTimestamp = document.getElementById("panel-timestamp");
+  const statBonds = document.getElementById("stat-bonds");
+  const statWords = document.getElementById("stat-words");
+  const saveBtn = document.getElementById("btn-panel-save");
+
+  function openEditor(id){
+    const n = nodeById(id);
+    if(!n) return;
+    titleInput.value = n.title;
+    contentInput.value = n.content;
+    refreshPanelMeta(n);
+    panel.classList.add("open");
+  }
+  function closeEditor(){ panel.classList.remove("open"); }
+
+  function refreshPanelMeta(n){
+    refreshState(n);
+    panelGlyph.textContent = STATE_GLYPH[n.state];
+    panelStateText.textContent = STATE_NAME[n.state];
+    const d = new Date(n.createdAt);
+    panelTimestamp.textContent = "Formed " + d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+    statBonds.textContent = connectionCount(n.id);
+    const words = n.content.trim() ? n.content.trim().split(/\s+/).length : 0;
+    statWords.textContent = words;
+  }
+
+  function saveEditor(){
+    if(!selectedNodeId) return;
+    const n = nodeById(selectedNodeId);
+    if(!n) return;
+    n.title = titleInput.value.slice(0,80);
+    n.content = contentInput.value;
+    refreshState(n);
+    updateNodeVisual(n);
+    refreshPanelMeta(n);
+    updateStatLine();
+    persist();
+    saveBtn.classList.remove("flash"); void saveBtn.offsetWidth; saveBtn.classList.add("flash");
+    const original = saveBtn.textContent;
+    saveBtn.textContent = "Saved";
+    saveBtn.classList.add("saved");
+    setTimeout(() => { saveBtn.textContent = original; saveBtn.classList.remove("saved"); }, 900);
+  }
+
+  document.getElementById("btn-panel-save").addEventListener("click", saveEditor);
+  document.getElementById("btn-panel-delete").addEventListener("click", requestDelete);
+  document.getElementById("panel-close").addEventListener("click", deselectAll);
+
+  // autosave title/content on blur too, so nothing is lost accidentally
+  titleInput.addEventListener("blur", saveEditor);
+  contentInput.addEventListener("blur", saveEditor);
+  // keyboard save
+  titleInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); saveEditor(); contentInput.focus(); } });
+
+
+/* ----------------------------------------------------------------
+   AMBIENT SOUND SYSTEM
+   No audio files are loaded (a published page can't fetch external
+   media) — instead a small generative pad is synthesized live with
+   the Web Audio API: a few slow, gently detuned sine/triangle layers
+   through a soft filter and a short feedback delay for space, plus a
+   quiet chime whenever an idea or bond forms. Browsers require a user
+   gesture before audio can play, so playback is deferred to the first
+   interaction if the person had it on last time.
+   ---------------------------------------------------------------- */
+  const SOUND_KEY = "molecular-thought-network.sound";
+  const SCALE = [220.00, 246.94, 261.63, 293.66, 329.63, 392.00, 440.00]; // A dorian-ish, deliberately calm
+  let audioCtx = null, masterGain = null, soundOn = false;
+
+  function loadSoundPref(){ try{ return localStorage.getItem(SOUND_KEY)==="1"; }catch(e){ return false; } }
+  function saveSoundPref(v){ try{ localStorage.setItem(SOUND_KEY, v?"1":"0"); }catch(e){} }
+
+  function ensureAudio(){
+    if(audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(audioCtx.destination);
+    buildPad();
+  }
+
+  function buildPad(){
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "lowpass"; filter.frequency.value = 1100; filter.Q.value = 0.3;
+    filter.connect(masterGain);
+
+    // a short feedback delay gives the pad a sense of space without any impulse-response file
+    const delay = audioCtx.createDelay(2.5);
+    delay.delayTime.value = 1.1;
+    const delayFeedback = audioCtx.createGain();
+    delayFeedback.gain.value = 0.22;
+    const delayWet = audioCtx.createGain();
+    delayWet.gain.value = 0.22;
+    filter.connect(delay);
+    delay.connect(delayFeedback); delayFeedback.connect(delay);
+    delay.connect(delayWet); delayWet.connect(masterGain);
+
+    // three low, softly breathing layers form the sustained chord
+    const roots = [SCALE[0]/2, SCALE[2]/2, SCALE[4]/2];
+    roots.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = i===1 ? "triangle" : "sine";
+      osc.frequency.value = freq;
+      const g = audioCtx.createGain();
+      g.gain.value = 0.055;
+      osc.connect(g); g.connect(filter);
+      osc.start();
+
+      // a very slow LFO detunes each layer independently so the chord
+      // never sits perfectly still — the audio equivalent of the drift
+      // already used in the background stars
+      const lfo = audioCtx.createOscillator();
+      lfo.type = "sine"; lfo.frequency.value = 0.018 + Math.random()*0.03;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = freq * 0.006;
+      lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+      lfo.start();
+    });
+  }
+
+  function setSoundOn(on){
+    soundOn = on;
+    saveSoundPref(on);
+    updateSoundButton();
+    if(on){
+      ensureAudio();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      const t = audioCtx.currentTime;
+      masterGain.gain.cancelScheduledValues(t);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+      masterGain.gain.linearRampToValueAtTime(0.5, t + 1.8);
+    } else if(audioCtx){
+      const t = audioCtx.currentTime;
+      masterGain.gain.cancelScheduledValues(t);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+      masterGain.gain.linearRampToValueAtTime(0, t + 0.9);
+    }
+  }
+
+  function updateSoundButton(){
+    const btn = document.getElementById("btn-sound");
+    if(!btn) return;
+    btn.classList.toggle("active", soundOn);
+    btn.setAttribute("data-tip", soundOn ? "Mute ambience" : "Ambient sound");
+  }
+
+  /** A single soft, short tone — played when an idea or bond forms.
+   *  Silent whenever ambience is off, so it never surprises anyone. */
+  function chime(kind){
+    if(!soundOn || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    const note = SCALE[Math.floor(Math.random()*SCALE.length)];
+    const freq = kind==="bond" ? note : note*2;
+    const osc = audioCtx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.0001;
+    osc.connect(g); g.connect(masterGain);
+    osc.start(t);
+    const peak = kind==="bond" ? 0.1 : 0.075;
+    const tail = kind==="bond" ? 1.8 : 1.15;
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + tail);
+    osc.stop(t + tail + 0.1);
+  }
+
+  function initSound(){
+    updateSoundButton();
+    if(loadSoundPref()){
+      // remembered as "on" from a previous visit — resume as soon as
+      // the person interacts at all, rather than forcing a second click
+      const resume = () => { setSoundOn(true); };
+      window.addEventListener("pointerdown", resume, { once:true });
+      window.addEventListener("keydown", resume, { once:true });
+    }
+  }
+
+  document.getElementById("btn-sound").addEventListener("click", () => setSoundOn(!soundOn));
+
+
+/* ----------------------------------------------------------------
+   TOOLBAR WIRING
+   ---------------------------------------------------------------- */
+  document.getElementById("btn-add").addEventListener("click", addNodeFromSelection);
+  document.getElementById("btn-connect").addEventListener("click", toggleConnectMode);
+  document.getElementById("btn-delete").addEventListener("click", requestDelete);
+  document.getElementById("btn-zoom-in").addEventListener("click", () => zoomAt(svg.clientWidth/2, svg.clientHeight/2, 0.28));
+  document.getElementById("btn-zoom-out").addEventListener("click", () => zoomAt(svg.clientWidth/2, svg.clientHeight/2, -0.28));
+  document.getElementById("btn-reset").addEventListener("click", resetView);
+  document.getElementById("btn-export").addEventListener("click", exportJSON);
+  document.getElementById("btn-import").addEventListener("click", () => document.getElementById("file-input").click());
+  document.getElementById("file-input").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if(f) confirmModal("Importing replaces your current network. Continue?", () => importJSONFile(f));
+    e.target.value = "";
+  });
+
+  window.addEventListener("keydown", (e) => {
+    const inField = document.activeElement && (document.activeElement.tagName==="INPUT" || document.activeElement.tagName==="TEXTAREA");
+    if(e.key==="Escape"){
+      if(connectMode){ connectMode=false; pendingConnectSource=null; hideModeBanner(); drawFrame(); updateToolbarState(); }
+      else deselectAll();
+    }
+    if(inField) return;
+    if((e.key==="Delete"||e.key==="Backspace") && (selectedNodeId||selectedBondId)){ e.preventDefault(); requestDelete(); }
+    if(e.key==="+"||e.key==="="){ zoomAt(svg.clientWidth/2, svg.clientHeight/2, 0.22); }
+    if(e.key==="-"||e.key==="_"){ zoomAt(svg.clientWidth/2, svg.clientHeight/2, -0.22); }
+  });
+
+
+/* ----------------------------------------------------------------
+   CONFIRM MODAL + TOAST helpers
+   ---------------------------------------------------------------- */
+  const modalVeil = document.getElementById("modal-veil");
+  const confirmText = document.getElementById("confirm-text");
+  let confirmCallback = null;
+
+  function confirmModal(text, onConfirm){
+    confirmText.textContent = text;
+    confirmCallback = onConfirm;
+    modalVeil.classList.add("show");
+  }
+  document.getElementById("confirm-cancel").addEventListener("click", () => { modalVeil.classList.remove("show"); confirmCallback=null; });
+  document.getElementById("confirm-ok").addEventListener("click", () => {
+    modalVeil.classList.remove("show");
+    if(confirmCallback) confirmCallback();
+    confirmCallback = null;
+  });
+  modalVeil.addEventListener("click", (e) => { if(e.target===modalVeil){ modalVeil.classList.remove("show"); confirmCallback=null; } });
+
+  const toastHost = document.getElementById("toast-host");
+  function toast(msg){
+    const el = document.createElement("div");
+    el.className = "toast"; el.textContent = msg;
+    toastHost.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("show"));
+    setTimeout(() => { el.classList.remove("show"); setTimeout(()=>el.remove(), 220); }, 2200);
+  }
+
+
+/* ----------------------------------------------------------------
+   STAT LINE + PARTICLE FIELD
+   ---------------------------------------------------------------- */
+  function updateStatLine(){
+    const idea = nodes.length===1 ? "idea" : "ideas";
+    const bond = connections.length===1 ? "bond" : "bonds";
+    document.getElementById("stat-line").textContent = nodes.length + " " + idea + " \u00B7 " + connections.length + " " + bond;
+  }
+
+  /* Background depth field: a handful of loose star clusters (a few of
+     them wrapped in a faint nebula cloud), plus a thin scatter of lone
+     stars between them, so the sky reads as formed rather than uniform. */
+  const STAR_PALETTE = [
+    { color:"rgba(238,242,246,0.95)", weight:5 },   // white
+    { color:"rgba(150,196,235,0.95)", weight:3 },   // pale blue
+    { color:"rgba(226,190,150,0.95)", weight:2 },   // pale amber
+    { color:"rgba(196,170,230,0.9)",  weight:1.4 }  // pale violet
+  ];
+  const NEBULA_PALETTE = [
+    "rgba(58,92,140,0.16)",   // deep blue
+    "rgba(92,66,130,0.14)",   // violet
+    "rgba(120,80,58,0.11)",   // amber ember
+    "rgba(56,110,120,0.12)"   // teal
+  ];
+
+  function pickWeighted(list){
+    const total = list.reduce((s,i)=>s+i.weight, 0);
+    let r = Math.random()*total;
+    for(const item of list){ if((r -= item.weight) <= 0) return item; }
+    return list[0];
+  }
+
+  function buildParticleField(){
+    const host = document.getElementById("particle-field");
+    const w = window.innerWidth, h = window.innerHeight;
+    const small = w < 600;
+    const clusterCount = small ? 3 : 5;
+    const starsPerCluster = small ? 7 : 11;
+    const ambientStars = small ? 10 : 20;
+
+    const centers = [];
+    for(let i=0;i<clusterCount;i++){
+      centers.push({
+        x: 10 + Math.random()*80,   // percent
+        y: 8 + Math.random()*84,
+        hasNebula: Math.random() < 0.65
+      });
+    }
+
+    // nebula clouds sit behind the stars
+    centers.forEach(c => {
+      if(!c.hasNebula) return;
+      const neb = document.createElement("div");
+      neb.className = "nebula";
+      const size = (small ? 160 : 260) + Math.random()*180;
+      neb.style.width = size+"px"; neb.style.height = size+"px";
+      neb.style.left = "calc(" + c.x + "% - " + size/2 + "px)";
+      neb.style.top = "calc(" + c.y + "% - " + size/2 + "px)";
+      neb.style.background = "radial-gradient(circle, " + pick(NEBULA_PALETTE) + " 0%, rgba(0,0,0,0) 72%)";
+      neb.style.setProperty("--ndx", (Math.random()*30-15)+"px");
+      neb.style.setProperty("--ndy", (Math.random()*24-12)+"px");
+      neb.style.animationDuration = (70+Math.random()*50)+"s";
+      neb.style.animationDelay = (-Math.random()*40)+"s";
+      host.appendChild(neb);
+    });
+
+    // stars gathered loosely around each cluster center
+    centers.forEach(c => {
+      for(let i=0;i<starsPerCluster;i++){
+        // gaussian-ish spread via summed randoms, tighter near the center
+        const spread = 9 + Math.random()*4;
+        const ox = gaussianOffset()*spread;
+        const oy = gaussianOffset()*spread;
+        makeStar(host, clampPct(c.x+ox), clampPct(c.y+oy));
+      }
+    });
+
+    // a thin scatter of lone stars across the whole field for openness
+    for(let i=0;i<ambientStars;i++){
+      makeStar(host, Math.random()*100, Math.random()*100);
+    }
+  }
+
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function clampPct(v){ return Math.max(1, Math.min(99, v)); }
+  function gaussianOffset(){ return (Math.random()+Math.random()+Math.random()-1.5)/1.5; }
+
+  function makeStar(host, xPct, yPct){
+    const p = document.createElement("div");
+    p.className = "particle";
+    const star = pickWeighted(STAR_PALETTE);
+    const brightness = 0.3 + Math.random()*0.55;
+    const size = 1 + Math.random()*1.8;
+    p.style.width = size+"px"; p.style.height = size+"px";
+    p.style.left = xPct+"%"; p.style.top = yPct+"%";
+    p.style.setProperty("--star-color", star.color);
+    p.style.setProperty("--dx", (Math.random()*36-18)+"px");
+    p.style.setProperty("--dy", (Math.random()*36-18)+"px");
+    p.style.opacity = String(brightness);
+
+    const driftDur = 20+Math.random()*26;
+    const driftDelay = -Math.random()*24;
+    let anim = "drift " + driftDur + "s linear infinite " + driftDelay + "s";
+
+    // roughly one star in five breathes gently — a quiet sense of life,
+    // not a sparkle effect
+    if(Math.random() < 0.2){
+      p.style.setProperty("--star-dim", String(Math.max(0.08, brightness-0.3)));
+      p.style.setProperty("--star-bright", String(Math.min(1, brightness+0.35)));
+      const twinkleDur = 4+Math.random()*5;
+      const twinkleDelay = -Math.random()*6;
+      anim += ", twinkle " + twinkleDur + "s ease-in-out infinite " + twinkleDelay + "s";
+      p.style.opacity = "";
+    }
+    p.style.animation = anim;
+    host.appendChild(p);
+  }
+
+
+/* ----------------------------------------------------------------
+   BOOTSTRAP
+   ---------------------------------------------------------------- */
+  function resizeHandler(){ /* svg is 100% sized; nothing else needed */ }
+  window.addEventListener("resize", resizeHandler);
+
+  function init(){
+    buildParticleField();
+    initSound();
+    const restored = loadFromStorage();
+    if(!restored || nodes.length===0){
+      centerViewInitial();
+      const seed = createNode("Beginning", 0, 0);
+      seed.pinned = true;
+      refreshState(seed);
+    }
+    if(view.panX===0 && view.panY===0 && !restored) centerViewInitial();
+    if(!restored){ /* already centered above */ }
+    else { applyView(); }
+    rebuildScene();
+    applyView();
+    updateStatLine();
+    wake(0.8);
+    persist();
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>

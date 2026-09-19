@@ -824,3 +824,8 @@ footer {
     }
 
 }
+
+L1 {
+    text-decoration: bold underline;
+    color: seashell;
+}
