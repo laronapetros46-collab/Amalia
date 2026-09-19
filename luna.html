@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Petra | Celestial Echoes</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <style>
+    :root {
+      --bg-deep: #0a0b10;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: var(--bg-deep);
+      font-family: 'Inter', sans-serif;
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .font-serif {
+      font-family: 'Playfair Display', serif;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      /* Subtle radial gradient to blend with 3D space */
+      background: radial-gradient(circle at center, #1c192b 0%, #0a0b10 100%);
+    }
+
+    /* UI Overlay Layer */
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* Let clicks pass through to canvas */
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 40px;
+      pointer-events: auto;
+    }
+
+    /* Elegant Glassmorphism */
+    .glass {
+      background: rgba(18, 16, 26, 0.5);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    /* Dynamic Hover Label */
+    #hover-label {
+      position: absolute;
+      transform: translate(-50%, -150%);
+      opacity: 0;
+      transition: opacity 0.4s ease, transform 0.1s ease;
+      pointer-events: none;
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: rgba(10, 10, 15, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    /* Reading Modal */
+    #poem-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -40%) scale(0.95);
+      width: 90%;
+      max-width: 540px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: auto;
+      border-radius: 16px;
+      padding: 50px;
+      text-align: center;
+      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #poem-modal.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .poem-text {
+      font-size: 1.1rem;
+      line-height: 2.2;
+      color: #e2e8f0;
+      margin: 35px 0;
+      white-space: pre-line;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .btn-return {
+      pointer-events: auto;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 12px 30px;
+      border-radius: 40px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    .btn-return:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- UI Overlay -->
+  <div class="ui-layer">
+    <header class="flex justify-between items-start">
+      <div>
+        <h1 class="font-serif text-3xl font-medium tracking-wider text-white drop-shadow-md">PETRA</h1>
+        <p class="text-xs uppercase tracking-[0.4em] text-gray-400 mt-2">Celestial Echoes</p>
+      </div>
+      <div class="text-right text-xs text-gray-400 max-w-[220px] leading-relaxed hidden sm:block tracking-wide">
+        Observe the serene orbital ballet.<br>Select a sphere to unveil its echo.
+      </div>
+    </header>
+
+    <div id="hover-label" class="font-serif italic">Anthology</div>
+
+    <div id="poem-modal" class="glass">
+      <div class="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-3" id="modal-subtitle">Anthology</div>
+      <h2 class="font-serif text-4xl text-white mb-4" id="modal-title">Title</h2>
+      
+      <div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent mx-auto mt-6 mb-4"></div>
+      
+      <p class="font-serif italic poem-text" id="modal-content">
+        Poem content goes here.
+      </p>
+
+      <button class="btn-return mt-4" id="btn-back">Return to Orbit</button>
+    </div>
+  </div>
+
+  <script>
+    // Premium Color Palette and Poetic Content
+    const celestialData = [
+      {
+        id: "pearl",
+        name: "Pearl of the Void",
+        subtitle: "Starlight & Silence",
+        color: 0xfdfbf7, // Pearl White
+        emissive: 0x4a4a4a,
+        size: 3.5,
+        baseDistance: 45,
+        speed: 0.0012, // Very slow
+        poem: `A singular gleam in the ocean of night,\nA delicate breath woven softly from light.\nIt travels the dark with a quietest grace,\nA pearl suspended in boundless space.`
+      },
+      {
+        id: "gold",
+        name: "Aureate Dust",
+        subtitle: "Warmth & Memory",
+        color: 0xe6c27a, // Soft Gold
+        emissive: 0x5a482b,
+        size: 4.8,
+        baseDistance: 75,
+        speed: 0.0009,
+        poem: `Golden embers drifting astray,\nRemnants of suns that have faded away.\nWe are woven from memories scattered and grand,\nThe universe held like gold dust in hand.`
+      },
+      {
+        id: "violet",
+        name: "Amethyst Veil",
+        subtitle: "Mystery & Nebula",
+        color: 0x8a78a3, // Muted Violet
+        emissive: 0x362c45,
+        size: 6,
+        baseDistance: 110,
+        speed: 0.0006,
+        poem: `A violet shadow spun from the deep,\nWhere forgotten constellations softly sleep.\nIn swirling clouds of amethyst hue,\nCreation whispers a story anew.`
+      },
+      {
+        id: "azure",
+        name: "Cerulean Deep",
+        subtitle: "Tide & Time",
+        color: 0x4f7cac, // Azure Blue
+        emissive: 0x1f354d,
+        size: 5,
+        baseDistance: 145,
+        speed: 0.00045,
+        poem: `Silent oceans of indigo shade,\nWhere the currents of gravity subtly fade.\nA sapphire jewel in the cosmic sea,\nReflecting the depths of eternity.`
+      },
+      {
+        id: "rose",
+        name: "Crimson Ember",
+        subtitle: "Passion & Dust",
+        color: 0xb5838d, // Rose Dust
+        emissive: 0x4d3338,
+        size: 4.2,
+        baseDistance: 180,
+        speed: 0.0003,
+        poem: `A solitary rose blooming out in the cold,\nA fiery secret that begs to be told.\nIt burns with a gentle and lingering heat,\nWhere the shadows and starlight quietly meet.`
+      }
+    ];
+
+    // --- STREAMING_CHUNK:Setting up Scene, Camera, and Renderer ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    
+    // Transparent background so CSS radial gradient shows through
+    scene.background = null; 
+    scene.fog = new THREE.FogExp2(0x0a0b10, 0.0012);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 2000);
+    const defaultCameraPos = new THREE.Vector3(0, 160, 260);
+    camera.position.copy(defaultCameraPos);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.04;
+    controls.maxDistance = 700;
+    controls.minDistance = 60;
+    controls.enablePan = false; // Keep focus on center
+
+    // --- STREAMING_CHUNK:Adding Ambient Starfield and Lighting ---
+    // Soft ambient lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+    // Central Star Point Light (Soft warm glow)
+    const starLight = new THREE.PointLight(0xfff5e6, 2, 800);
+    starLight.position.set(0, 0, 0);
+    scene.add(starLight);
+
+    // Deep Space Starfield (Subtle, elegant background)
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 2000;
+    const posArray = new Float32Array(starsCount * 3);
+    const opacities = new Float32Array(starsCount);
+
+    for(let i = 0; i < starsCount; i++) {
+      const radius = 400 + Math.random() * 800;
+      const theta = 2 * Math.PI * Math.random();
+      const phi = Math.acos(2 * Math.random() - 1);
+      
+      posArray[i*3] = radius * Math.sin(phi) * Math.cos(theta);
+      posArray[i*3+1] = radius * Math.sin(phi) * Math.sin(theta);
+      posArray[i*3+2] = radius * Math.cos(phi);
+      
+      opacities[i] = Math.random();
+    }
+
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    starsGeometry.setAttribute('alpha', new THREE.BufferAttribute(opacities, 1));
+    
+    // Custom shader for twinkling stars
+    const starMaterial = new THREE.ShaderMaterial({
+      uniforms: { time: { value: 0 } },
+      vertexShader: `
+        attribute float alpha;
+        varying float vAlpha;
+        void main() {
+          vAlpha = alpha;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = (2.0 / -mvPosition.z) * 100.0;
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        varying float vAlpha;
+        void main() {
+          float twinkle = sin(time * 2.0 + vAlpha * 10.0) * 0.5 + 0.5;
+          float finalAlpha = vAlpha * twinkle * 0.7;
+          
+          // Soft circular particle
+          vec2 xy = gl_PointCoord.xy - vec2(0.5);
+          float ll = length(xy);
+          if(ll > 0.5) discard;
+          
+          gl_FragColor = vec4(1.0, 0.98, 0.95, finalAlpha * (1.0 - (ll*2.0)));
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    
+    const starMesh = new THREE.Points(starsGeometry, starMaterial);
+    scene.add(starMesh);
+
+    // --- STREAMING_CHUNK:Constructing Central Star & Planet Geometries ---
+    // Central Star (Soft glowing sphere)
+    const centralStarGroup = new THREE.Group();
+    
+    const coreGeo = new THREE.SphereGeometry(12, 64, 64);
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xfffcf5 }); // Bright center
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    centralStarGroup.add(core);
+
+    // Additive blending layers for elegant bloom effect
+    const createGlow = (radius, opacity) => {
+      const gGeo = new THREE.SphereGeometry(radius, 64, 64);
+      const gMat = new THREE.MeshBasicMaterial({ 
+        color: 0xe6d5b8, 
+        transparent: true, 
+        opacity: opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      return new THREE.Mesh(gGeo, gMat);
+    };
+
+    centralStarGroup.add(createGlow(14, 0.4));
+    centralStarGroup.add(createGlow(18, 0.2));
+    centralStarGroup.add(createGlow(25, 0.08));
+    scene.add(centralStarGroup);
+
+    // Array to hold dynamic planet data
+    const planets = [];
+
+    // Construct Planets and Orbits
+    celestialData.forEach((data) => {
+      const group = new THREE.Group();
+      
+      // Elegant material settings
+      const mat = new THREE.MeshStandardMaterial({
+        color: data.color,
+        emissive: data.emissive,
+        emissiveIntensity: 0.6,
+        roughness: 0.3,
+        metalness: 0.1,
+      });
+
+      const geo = new THREE.SphereGeometry(data.size, 64, 64);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.userData = { isPlanet: true, ...data };
+      group.add(mesh);
+
+      // Add a very subtle atmosphere glow to the planets
+      const atmoGeo = new THREE.SphereGeometry(data.size + 0.3, 32, 32);
+      const atmoMat = new THREE.MeshBasicMaterial({
+        color: data.color,
+        transparent: true,
+        opacity: 0.15,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const atmo = new THREE.Mesh(atmoGeo, atmoMat);
+      group.add(atmo);
+
+      // Random initial angle on the circle
+      const angle = Math.random() * Math.PI * 2;
+      
+      scene.add(group);
+
+      planets.push({
+        group: group,
+        mesh: mesh, // For raycasting
+        data: data,
+        angle: angle,
+        baseDistance: data.baseDistance,
+        speed: data.speed
+      });
+      
+      // Draw delicate, highly transparent orbit rings
+      const ringGeo = new THREE.RingGeometry(data.baseDistance - 0.15, data.baseDistance + 0.15, 128);
+      const ringMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff, 
+        transparent: true, 
+        opacity: 0.04, 
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      scene.add(ring);
+    });
+
+    // --- STREAMING_CHUNK:Setting up Raycasting and Interactivity ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    let hoveredPlanet = null;
+    let isZoomed = false;
+
+    const hoverLabel = document.getElementById('hover-label');
+    const poemModal = document.getElementById('poem-modal');
+    const btnBack = document.getElementById('btn-back');
+
+    // Hover Interaction
+    window.addEventListener('mousemove', (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      if(isZoomed) return;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
+
+      if (intersects.length > 0) {
+        document.body.style.cursor = 'pointer';
+        const object = intersects[0].object;
+        hoveredPlanet = planets.find(p => p.mesh === object);
+        
+        hoverLabel.style.opacity = 1;
+        hoverLabel.innerHTML = `${hoveredPlanet.data.name}`;
+      } else {
+        document.body.style.cursor = 'default';
+        hoveredPlanet = null;
+        hoverLabel.style.opacity = 0;
+      }
+    });
+
+    // --- STREAMING_CHUNK:Handling Camera Transitions and Modals ---
+    // Click Interaction
+    window.addEventListener('click', () => {
+      if (hoveredPlanet && !isZoomed) {
+        openPoemModal(hoveredPlanet);
+      }
+    });
+
+    btnBack.addEventListener('click', closePoemModal);
+
+    function openPoemModal(targetObj) {
+      isZoomed = true;
+      hoverLabel.style.opacity = 0;
+      controls.enabled = false;
+
+      // Update Modal Texts
+      document.getElementById('modal-title').innerText = targetObj.data.name;
+      document.getElementById('modal-subtitle').innerText = targetObj.data.subtitle;
+      document.getElementById('modal-content').innerText = targetObj.data.poem;
+
+      // Calculate camera position for viewing (offset along the orbit)
+      const pPos = targetObj.group.position;
+      const angle = Math.atan2(pPos.z, pPos.x);
+      const camOffset = targetObj.data.size * 5; // Distance from planet
+      
+      const camTargetPos = new THREE.Vector3(
+        pPos.x + Math.cos(angle) * camOffset,
+        pPos.y + targetObj.data.size * 2, // Look slightly down
+        pPos.z + Math.sin(angle) * camOffset
+      );
+
+      // Smooth camera flight
+      gsap.to(camera.position, {
+        x: camTargetPos.x,
+        y: camTargetPos.y,
+        z: camTargetPos.z,
+        duration: 2.5,
+        ease: "power2.inOut"
+      });
+
+      gsap.to(controls.target, {
+        x: pPos.x,
+        y: pPos.y,
+        z: pPos.z,
+        duration: 2.5,
+        ease: "power2.inOut",
+        onUpdate: () => controls.update(),
+        onComplete: () => {
+          poemModal.classList.add('active');
+        }
+      });
+    }
+
+    function closePoemModal() {
+      poemModal.classList.remove('active');
+      
+      // Return camera flight
+      gsap.to(camera.position, {
+        x: defaultCameraPos.x,
+        y: defaultCameraPos.y,
+        z: defaultCameraPos.z,
+        duration: 2.5,
+        ease: "power2.inOut"
+      });
+
+      gsap.to(controls.target, {
+        x: 0,
+        y: 0,
+        z: 0,
+        duration: 2.5,
+        ease: "power2.inOut",
+        onUpdate: () => controls.update(),
+        onComplete: () => {
+          isZoomed = false;
+          controls.enabled = true;
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- STREAMING_CHUNK:Main Animation Loop (Serene Orbiting) ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Update shader uniform for twinkling stars
+      starMaterial.uniforms.time.value = time;
+      
+      // Slow background rotation
+      starMesh.rotation.y += 0.02 * delta;
+
+      // Predictable, serene orbital mechanics (Trigonometry based, no chaotic physics)
+      planets.forEach(p => {
+        // Only progress the orbit if we aren't zoomed in reading a poem
+        if (!isZoomed) {
+          p.angle += p.speed;
+        }
+        
+        // Circular orbit
+        p.group.position.x = Math.cos(p.angle) * p.baseDistance;
+        p.group.position.z = Math.sin(p.angle) * p.baseDistance;
+        
+        // Gentle axis rotation
+        p.mesh.rotation.y += 0.005;
+        p.mesh.rotation.x += 0.002;
+      });
+
+      // Update Hover Label Position relative to planet in 2D space
+      if (hoveredPlanet && !isZoomed) {
+        const vector = hoveredPlanet.group.position.clone();
+        vector.y += hoveredPlanet.data.size + 3; // Offset above
+        vector.project(camera);
+
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+
+        hoverLabel.style.left = `${x}px`;
+        hoverLabel.style.top = `${y}px`;
+      }
+
+      if (!isZoomed) controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+  </script>
+</body>
+</html>
