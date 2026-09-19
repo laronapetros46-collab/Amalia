@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Petra | Celestial Echoes</title>
+<title>Petra | Astral Reverie</title>
 <meta name="color-scheme" content="dark">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,6 @@
 <style>
 :root {
   --bg-0: #020106;
-  --bg-vignette: radial-gradient(ellipse at 50% 50%, #150a1a 0%, #0a0815 45%, #030206 80%, #010102 100%);
   --cream: #f4f0e6;
   --cream-dim: #c5c0b5;
   --muted: #8b92a5;
@@ -21,8 +20,8 @@
   --line: rgba(180, 195, 225, 0.25);
   --accent-stellar: #ffb86c;
   --accent-lunara: #8be9fd;
-  --card-bg: rgba(12, 14, 25, 0.65);
-  --card-border: rgba(255, 255, 255, 0.1);
+  --card-bg: rgba(12, 14, 25, 0.75);
+  --card-border: rgba(255, 255, 255, 0.12);
   --ease: cubic-bezier(0.22, 0.9, 0.3, 1);
   --px: 0px;
   --py: 0px;
@@ -35,48 +34,21 @@ html, body {
 }
 body { min-height: 100vh; overflow-x: hidden; }
 
-/* Parallax Layers */
-#backdrop { position: fixed; inset: -50px; background: var(--bg-vignette); z-index: 0; }
-#space-layer {
-  position: fixed; inset: -50px; z-index: 0; pointer-events: none;
-  transform: translate(calc(var(--px) * -1.5), calc(var(--py) * -1.5));
-  transition: transform 0.1s ease-out;
+/* Canvas Background Engine */
+#cosmos-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
 }
-#nebula-layer {
-  position: fixed; inset: -50px; z-index: 1; pointer-events: none;
-  transform: translate(calc(var(--px) * -0.8), calc(var(--py) * -0.8));
-  transition: transform 0.1s ease-out;
-}
+
 #ui-layer {
-  position: relative; z-index: 5;
-  transform: translate(calc(var(--px) * 0.5), calc(var(--py) * 0.5));
+  position: relative; 
+  z-index: 5;
+  transform: translate(calc(var(--px) * 0.3), calc(var(--py) * 0.3));
   transition: transform 0.1s ease-out;
-}
-
-/* Stars */
-.star-p { 
-  position: absolute; border-radius: 50%; 
-  background: var(--sc, #fff); 
-  box-shadow: 0 0 calc(var(--size) * 3) var(--sc);
-}
-@keyframes twinkle { 
-  0%, 100% { opacity: var(--dim, 0.2); transform: scale(0.8); } 
-  50% { opacity: var(--bright, 0.9); transform: scale(1.2); } 
-}
-
-/* Gas Clouds */
-.stage-cloud {
-  position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
-  filter: blur(8vmin); mix-blend-mode: screen; pointer-events: none;
-  animation: cloud-pulse alternate infinite;
-}
-@keyframes cloud-pulse {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.9; }
-}
-.star-halo {
-  position: absolute; border-radius: 50%; transform: translate(-50%, -50%); z-index: 2;
-  pointer-events: none; filter: blur(20px); mix-blend-mode: screen;
 }
 
 /* UI Elements */
@@ -96,20 +68,41 @@ body { min-height: 100vh; overflow-x: hidden; }
 
 /* Stage */
 #stage-wrap { display: flex; align-items: center; justify-content: center; padding: 0 20px 80px; }
-#orbit-stage { position: relative; width: min(90vw, 75vh, 800px); height: min(90vw, 75vh, 800px); flex-shrink: 0; }
+#orbit-stage { position: relative; width: min(90vw, 75vh, 800px); height: min(90vw, 75vh, 800px); flex-shrink: 0; isolation: isolate; }
+#orbit-stage::before,
+#orbit-stage::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+#orbit-stage::before {
+  width: 31%; height: 31%;
+  background: radial-gradient(circle, rgba(255, 217, 154, 0.2) 0%, rgba(255, 126, 92, 0.09) 34%, rgba(16, 12, 28, 0) 72%);
+  filter: blur(5px);
+  z-index: 0;
+}
+#orbit-stage::after {
+  width: 45%; height: 45%;
+  border: 1px solid rgba(139, 233, 253, 0.12);
+  box-shadow: 0 0 0 16px rgba(255, 184, 108, 0.035), 0 0 70px rgba(255, 126, 92, 0.08);
+  z-index: 0;
+}
 #orbit-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; pointer-events: none; }
 .leader-line { stroke: var(--line); stroke-width: 1.5; opacity: 0; transition: opacity 400ms var(--ease); stroke-dasharray: 4 4; }
 .leader-line.shown { opacity: 0.8; stroke-dasharray: none; }
 
 /* Interactive Nodes */
 .star-node {
-  position: absolute; width: 16px; height: 16px; border-radius: 50%; z-index: 4;
+  position: absolute; width: 18px; height: 18px; border-radius: 50%; z-index: 4;
   transform: translate(-50%, -50%); cursor: pointer;
   transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
 }
 .star-node::after {
-  content: ''; position: absolute; inset: -10px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.2); opacity: 0; transform: scale(0.5);
+  content: ''; position: absolute; inset: -12px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25); opacity: 0; transform: scale(0.5);
   transition: all 300ms var(--ease);
 }
 .star-node:hover, .star-node:focus-visible { transform: translate(-50%, -50%) scale(1.4); }
@@ -119,49 +112,49 @@ body { min-height: 100vh; overflow-x: hidden; }
 
 /* Glassmorphic Cards */
 .poem-chip {
-  position: absolute; width: 180px; z-index: 10; transform: translate(-50%, -50%) scale(0.95);
-  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px;
-  padding: 18px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  position: absolute; width: 190px; z-index: 10; transform: translate(-50%, -50%) scale(0.95);
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
+  padding: 18px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
   opacity: 0; pointer-events: none; transition: all 300ms var(--ease); text-align: center;
 }
 .poem-chip.shown { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
 .poem-chip .num { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
-.poem-chip h3 { margin: 0 0 8px; font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: var(--cream); }
+.poem-chip h3 { margin: 0 0 8px; font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; color: var(--cream); }
 .poem-chip p { margin: 0 0 14px; font-size: 11px; line-height: 1.5; color: var(--cream-dim); font-weight: 300; }
 .chip-btn {
   font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.05em; padding: 8px 18px;
-  border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); color: var(--cream);
-  background: rgba(255,255,255,0.05); cursor: pointer; transition: all 200ms ease;
+  border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); color: var(--cream);
+  background: rgba(255,255,255,0.06); cursor: pointer; transition: all 200ms ease;
 }
-.chip-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+.chip-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); }
 
 /* Modal */
 #modal-veil {
-  position: fixed; inset: 0; z-index: 50; background: rgba(2, 1, 6, 0.85); backdrop-filter: blur(8px);
+  position: fixed; inset: 0; z-index: 50; background: rgba(2, 1, 6, 0.88); backdrop-filter: blur(10px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
   opacity: 0; pointer-events: none; transition: opacity 400ms var(--ease);
 }
 #modal-veil.show { opacity: 1; pointer-events: auto; }
 #poem-modal {
   width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
-  background: rgba(15, 12, 25, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+  background: rgba(14, 11, 24, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 24px;
   padding: 40px; position: relative;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.08);
   transform: translateY(20px) scale(0.95); opacity: 0; transition: all 400ms var(--ease);
 }
 #modal-veil.show #poem-modal { transform: translateY(0) scale(1); opacity: 1; }
 #modal-close {
-  position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; color: var(--muted);
+  position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.06); border: none; color: var(--muted);
   font-size: 24px; cursor: pointer; width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; transition: all 200ms ease;
 }
-#modal-close:hover { color: #fff; background: rgba(255,255,255,0.15); }
+#modal-close:hover { color: #fff; background: rgba(255,255,255,0.2); }
 #modal-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 600; margin: 0 0 24px; color: var(--cream); text-align: center; }
-#modal-body { font-family: 'Cormorant Garamond', serif; font-size: 19px; line-height: 1.8; color: var(--cream-dim); white-space: pre-line; text-align: center; }
+#modal-body { font-family: 'Cormorant Garamond', serif; font-size: 19px; line-height: 1.85; color: var(--cream-dim); white-space: pre-line; text-align: center; }
 
 /* Responsive Stacked Mode */
-body.stacked #orbit-svg, body.stacked .star-node, body.stacked .stage-cloud, body.stacked .star-halo { display: none; }
+body.stacked #orbit-svg, body.stacked .star-node { display: none; }
 body.stacked #orbit-stage { width: 100%; height: auto; }
 body.stacked .poem-chip {
   position: relative; inset: auto; transform: none !important; opacity: 1; pointer-events: auto;
@@ -176,9 +169,8 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
 </head>
 <body>
 
-<div id="backdrop"></div>
-<div id="space-layer" id="stars"></div>
-<div id="nebula-layer"></div>
+<!-- High-Fidelity Canvas Rendering Background -->
+<canvas id="cosmos-canvas"></canvas>
 
 <div id="ui-layer">
   <div id="topbar">
@@ -191,7 +183,7 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
 
   <header id="page-head">
     <div class="eyebrow">STELLAR & LUNARA</div>
-    <h1>Celestial Echoes</h1>
+    <h1>Astral Reverie</h1>
     <p class="tagline">Born of the Orion Nebula. A dichotomy of blazing gold and tranquil ice, written in the stars.</p>
   </header>
 
@@ -217,7 +209,6 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
 (function(){
   "use strict";
 
-  // Stellar (Gold/Fire) and Lunara (Cyan/Ice) Themes
   const POEMS = [
     { num:"01", type:"stellar", title:"Nova", blurb:"The roar of ignition; life demanding to be felt.",
       angle:-60, radius:18, gas:"rgba(255, 120, 80, 0.5)", color:"#ff8a50",
@@ -242,47 +233,17 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
   const stage = document.getElementById("orbit-stage");
   const list = document.getElementById("poem-list");
   const leaderLayer = document.getElementById("leader-lines");
-  const nebulaLayer = document.getElementById("nebula-layer");
-  const spaceLayer = document.getElementById("space-layer");
 
   function polar(angleDeg, radiusPct){
     const a = angleDeg * Math.PI/180;
     return { x: 50 + radiusPct*Math.cos(a), y: 50 + radiusPct*Math.sin(a) };
   }
 
-  // 1. Generate Deep Orion Nebula Clouds
-  const ORION_CLOUDS = [
-    { x:40, y:40, size:60, color:"rgba(255, 20, 147, 0.2)", dur: "15s" }, // Deep Pink
-    { x:60, y:60, size:70, color:"rgba(0, 255, 255, 0.15)", dur: "20s" }, // Cyan
-    { x:50, y:50, size:50, color:"rgba(255, 165, 0, 0.25)", dur: "12s" }, // Warm Gold core
-    { x:30, y:70, size:55, color:"rgba(75, 0, 130, 0.3)", dur: "18s" },   // Indigo
-    { x:70, y:30, size:65, color:"rgba(255, 105, 180, 0.15)", dur: "25s" } // Hot Pink
-  ];
-  
-  ORION_CLOUDS.forEach(c => {
-    const el = document.createElement("div");
-    el.className = "stage-cloud";
-    el.style.left = c.x + "%"; el.style.top = c.y + "%";
-    el.style.width = c.size + "vw"; el.style.height = c.size + "vw";
-    el.style.background = `radial-gradient(circle, ${c.color} 0%, transparent 60%)`;
-    el.style.animationDuration = c.dur;
-    nebulaLayer.appendChild(el);
-  });
-
-  // 2. Generate Interactive Poem Nodes
+  // Generate Interactive Nodes
   POEMS.forEach((p) => {
     const pos = polar(p.angle, p.radius);
     const labelPos = polar(p.angle, p.radius + 12); 
 
-    // Star Halo
-    const halo = document.createElement("div");
-    halo.className = "star-halo";
-    halo.style.left = pos.x + "%"; halo.style.top = pos.y + "%";
-    halo.style.width = "20%"; halo.style.height = "20%";
-    halo.style.background = `radial-gradient(circle, ${p.gas} 0%, transparent 70%)`;
-    stage.appendChild(halo);
-
-    // Node
     const star = document.createElement("div");
     star.className = "star-node";
     star.style.left = pos.x + "%"; star.style.top = pos.y + "%";
@@ -292,14 +253,12 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
     star.setAttribute("tabindex","0");
     stage.appendChild(star);
 
-    // Leader Line
     const line = document.createElementNS("http://www.w3.org/2000/svg","line");
     line.setAttribute("class","leader-line");
     line.setAttribute("x1", pos.x); line.setAttribute("y1", pos.y);
     line.setAttribute("x2", labelPos.x); line.setAttribute("y2", labelPos.y);
     leaderLayer.appendChild(line);
 
-    // Glassmorphic Card
     const chip = document.createElement("div");
     chip.className = "poem-chip";
     chip.style.left = labelPos.x + "%"; chip.style.top = labelPos.y + "%";
@@ -310,7 +269,7 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
       <button class="chip-btn" type="button">Read Poem</button>
     `;
     stage.appendChild(chip);
-    list.appendChild(chip.cloneNode(true)); // For mobile
+    list.appendChild(chip.cloneNode(true));
 
     const openThis = () => openPoem(p);
     star.addEventListener("click", openThis);
@@ -324,64 +283,157 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
     chip.addEventListener("mouseleave", hide);
   });
 
-  // Attach events to mobile cloned chips
   document.querySelectorAll('#poem-list .poem-chip').forEach((c, idx) => {
     c.querySelector('.chip-btn').addEventListener('click', () => openPoem(POEMS[idx]));
   });
 
-  // 3. Dense Core Starfield (1500 stars, cubic distribution to cluster in center)
-  const isMobile = window.innerWidth < 760;
-  const STAR_COUNT = isMobile ? 300 : 1500;
-  const fragment = document.createDocumentFragment();
-  
-  for(let i=0; i<STAR_COUNT; i++){
-    const el = document.createElement("div");
-    el.className = "star-p";
-    
-    // Cubic distribution for core clustering
-    const angle = Math.random() * Math.PI * 2;
-    const distance = Math.pow(Math.random(), 3) * 60; // 0 to 60% distance from center
-    const x = 50 + Math.cos(angle) * distance;
-    const y = 50 + Math.sin(angle) * distance;
-    
-    const size = Math.random() * 2;
-    const isBright = Math.random() > 0.8;
-    
-    el.style.left = x + "%";
-    el.style.top = y + "%";
-    el.style.setProperty("--size", size + "px");
-    el.style.width = size + "px";
-    el.style.height = size + "px";
-    
-    // Tint stars based on Orion Nebula colors
-    const r = Math.random();
-    let color = "#fff";
-    if(r > 0.9) color = "#ffb86c"; // Stellar Gold
-    else if(r > 0.8) color = "#8be9fd"; // Lunara Ice
-    else if(r > 0.7) color = "#ff79c6"; // Nebula Pink
-    
-    el.style.setProperty("--sc", color);
-    
-    if(isBright) {
-      el.style.animation = `twinkle ${2 + Math.random() * 4}s ease-in-out infinite ${-Math.random() * 5}s`;
-    } else {
-      el.style.opacity = Math.random() * 0.5 + 0.1;
-    }
-    
-    fragment.appendChild(el);
-  }
-  spaceLayer.appendChild(fragment);
+  // --- HTML5 Canvas Orion Nebula & Realistic Star Engine ---
+  const canvas = document.getElementById("cosmos-canvas");
+  const ctx = canvas.getContext("2d");
 
-  // 4. Parallax Effect
+  let width, height;
+  function resizeCanvas() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  // Create Nebula Gas Clouds
+  const clouds = [
+    { x: 0.35, y: 0.35, r: 450, color: "rgba(255, 20, 147, 0.18)", vx: 0.0002, vy: 0.00015 },
+    { x: 0.65, y: 0.60, r: 520, color: "rgba(0, 220, 255, 0.14)", vx: -0.00015, vy: -0.0002 },
+    { x: 0.50, y: 0.50, r: 380, color: "rgba(255, 165, 0, 0.22)", vx: 0.0001, vy: -0.0001 },
+    { x: 0.25, y: 0.70, r: 480, color: "rgba(110, 30, 180, 0.22)", vx: -0.0002, vy: 0.00015 },
+    { x: 0.75, y: 0.30, r: 400, color: "rgba(255, 80, 150, 0.15)", vx: 0.00015, vy: 0.0002 }
+  ];
+
+  // Create Starfield Population
+  const starCount = window.innerWidth < 768 ? 400 : 1200;
+  const stars = [];
+  const dust = [];
+  const starColors = ["#ffffff", "#f0f4ff", "#ffeedd", "#ffb86c", "#8be9fd", "#ff79c6"];
+
+  for (let i = 0; i < starCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.pow(Math.random(), 2.5) * Math.max(width, height) * 0.6;
+    stars.push({
+      x: width / 2 + Math.cos(angle) * dist,
+      y: height / 2 + Math.sin(angle) * dist,
+      baseRadius: Math.random() * 1.5 + 0.3,
+      color: starColors[Math.floor(Math.random() * starColors.length)],
+      alpha: Math.random() * 0.8 + 0.2,
+      twinkleSpeed: 0.01 + Math.random() * 0.03,
+      twinkleOffset: Math.random() * Math.PI * 2
+    });
+  }
+
+  for (let i = 0; i < 90; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 0.16 + Math.random() * 0.34;
+    dust.push({
+      angle,
+      distance,
+      size: Math.random() * 1.1 + 0.2,
+      alpha: Math.random() * 0.35 + 0.08,
+      speed: (Math.random() * 0.0007 + 0.00025) * (Math.random() > 0.5 ? 1 : -1)
+    });
+  }
+
+  let mouseX = 0, mouseY = 0;
   document.addEventListener('mousemove', (e) => {
-    if(isMobile) return;
-    const x = (e.clientX / window.innerWidth - 0.5) * 40; // max 20px shift
-    const y = (e.clientY / window.innerHeight - 0.5) * 40;
-    document.documentElement.style.setProperty('--px', `${x}px`);
-    document.documentElement.style.setProperty('--py', `${y}px`);
+    mouseX = (e.clientX / width - 0.5);
+    mouseY = (e.clientY / height - 0.5);
+    document.documentElement.style.setProperty('--px', `${mouseX * 50}px`);
+    document.documentElement.style.setProperty('--py', `${mouseY * 50}px`);
   });
 
-  // 5. Modal Logic
+  let time = 0;
+  function animateCosmos() {
+    time += 0.01;
+    ctx.clearRect(0, 0, width, height);
+
+    // Deep Vignette Background
+    const bgGradient = ctx.createRadialGradient(width/2, height/2, 50, width/2, height/2, Math.max(width, height)*0.75);
+    bgGradient.addColorStop(0, "#150a1a");
+    bgGradient.addColorStop(0.45, "#0a0815");
+    bgGradient.addColorStop(0.8, "#030206");
+    bgGradient.addColorStop(1, "#010102");
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Render Nebula Gas Clouds with smooth sine drift
+    ctx.globalCompositeOperation = 'screen';
+    clouds.forEach((c, idx) => {
+      const cx = width * c.x + Math.sin(time * c.vx * 1000 + idx) * 60 + mouseX * -30;
+      const cy = height * c.y + Math.cos(time * c.vy * 1000 + idx) * 60 + mouseY * -30;
+      
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, c.r);
+      grad.addColorStop(0, c.color);
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, c.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Fine dust and orbit haze give the nebula a denser, more dimensional core.
+    ctx.globalCompositeOperation = 'screen';
+    dust.forEach((particle) => {
+      const angle = particle.angle + time * particle.speed * 60;
+      const radius = particle.distance * Math.min(width, height);
+      const px = width / 2 + Math.cos(angle) * radius + mouseX * -12;
+      const py = height / 2 + Math.sin(angle) * radius * 0.58 + mouseY * -12;
+      ctx.globalAlpha = particle.alpha;
+      ctx.fillStyle = particle.distance > 0.3 ? '#8be9fd' : '#ffd39a';
+      ctx.beginPath();
+      ctx.arc(px, py, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const core = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.min(width, height) * 0.25);
+    core.addColorStop(0, 'rgba(255, 236, 190, 0.16)');
+    core.addColorStop(0.22, 'rgba(255, 153, 106, 0.08)');
+    core.addColorStop(0.58, 'rgba(139, 233, 253, 0.025)');
+    core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(width / 2, height / 2, Math.min(width, height) * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Render Stars with Individual Twinkling Phase & Parallax
+    ctx.globalCompositeOperation = 'source-over';
+    stars.forEach(s => {
+      const twinkle = Math.sin(time * s.twinkleSpeed * 60 + s.twinkleOffset);
+      const currentAlpha = Math.max(0.05, s.alpha + twinkle * 0.25);
+      
+      // Apply subtle mouse parallax shift
+      const px = s.x + mouseX * -20;
+      const py = s.y + mouseY * -20;
+
+      ctx.fillStyle = s.color;
+      ctx.globalAlpha = currentAlpha;
+      ctx.beginPath();
+      ctx.arc(px, py, s.baseRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Soft glow for bright stars
+      if (s.baseRadius > 1.2 && currentAlpha > 0.6) {
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = s.color;
+        ctx.fill();
+        ctx.shadowBlur = 0; // reset
+      }
+    });
+
+    ctx.globalAlpha = 1.0;
+    requestAnimationFrame(animateCosmos);
+  }
+  animateCosmos();
+
+  // Modal Logic
   const veil = document.getElementById("modal-veil");
   const modalTitle = document.getElementById("modal-title");
   const modalBody = document.getElementById("modal-body");
@@ -398,7 +450,7 @@ body.stacked #poem-list { display: flex; flex-direction: column; align-items: ce
   veil.addEventListener("click", e => { if(e.target===veil) closePoem(); });
   window.addEventListener("keydown", e => { if(e.key==="Escape") closePoem(); });
 
-  // 6. Responsive layout toggle
+  // Layout mode switcher for mobile stacking
   function applyLayoutMode(){
     if(window.innerWidth < 760){
       document.body.classList.add("stacked");
