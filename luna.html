@@ -73,6 +73,46 @@
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
     }
 
+    .floating-panel {
+      position: absolute;
+      right: 40px;
+      bottom: 40px;
+      width: min(260px, calc(100vw - 32px));
+      padding: 18px 20px 16px;
+      border-radius: 18px;
+      pointer-events: auto;
+      transition: transform 0.35s ease, border-color 0.35s ease;
+    }
+
+    .floating-panel:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    .eyebrow {
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-size: 10px;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.3rem, 1.4vw, 1.7rem);
+      margin: 0 0 6px;
+      color: white;
+    }
+
+    .panel-copy {
+      font-size: 12px;
+      line-height: 1.7;
+      color: rgba(226, 232, 240, 0.7);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
     /* Dynamic Hover Label */
     #hover-label {
       position: absolute;
@@ -97,15 +137,17 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -40%) scale(0.95);
-      width: 90%;
-      max-width: 540px;
+      transform: translate(-50%, -40%) scale(0.96);
+      width: min(90vw, 540px);
       opacity: 0;
       visibility: hidden;
       pointer-events: auto;
-      border-radius: 16px;
-      padding: 50px;
+      border-radius: 20px;
+      padding: 42px 32px 32px;
       text-align: center;
+      background: linear-gradient(180deg, rgba(13,12,17,0.72), rgba(17,16,23,0.8));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
       transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -163,6 +205,12 @@
     </header>
 
     <div id="hover-label" class="font-serif italic">Anthology</div>
+
+    <aside class="floating-panel glass" aria-live="polite">
+      <div class="eyebrow">Selected orbit</div>
+      <h2 id="selection-name" class="panel-title">Pearl of the Void</h2>
+      <p id="selection-desc" class="panel-copy">Starlight &amp; Silence</p>
+    </aside>
 
     <div id="poem-modal" class="glass">
       <div class="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-3" id="modal-subtitle">Anthology</div>
@@ -238,6 +286,48 @@
       }
     ];
 
+    function toCssHex(value) {
+      return '#' + value.toString(16).padStart(6, '0');
+    }
+
+    function createPlanetTexture(baseColor, accentColor, highlight = '#ffffff') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      const gradient = ctx.createRadialGradient(88, 72, 18, 128, 128, 150);
+      gradient.addColorStop(0, highlight);
+      gradient.addColorStop(0.22, baseColor);
+      gradient.addColorStop(0.8, accentColor);
+      gradient.addColorStop(1, '#111827');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 256, 256);
+
+      for (let i = 0; i < 700; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const radius = Math.random() * 4 + 1;
+        const alpha = 0.08 + Math.random() * 0.2;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let stripe = 0; stripe < 12; stripe++) {
+        const y = stripe * 22 + Math.random() * 14;
+        ctx.fillStyle = `rgba(255,255,255,${0.02 + stripe * 0.005})`;
+        ctx.fillRect(0, y, 256, 3 + Math.random() * 6);
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
     // --- STREAMING_CHUNK:Setting up Scene, Camera, and Renderer ---
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
@@ -266,8 +356,8 @@
     // Soft ambient lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-    // Central Star Point Light (Soft warm glow)
-    const starLight = new THREE.PointLight(0xfff5e6, 2, 800);
+    // Central Star Point Light (Hot blue-white solar glow)
+    const starLight = new THREE.PointLight(0xcfe7ff, 2.4, 800);
     starLight.position.set(0, 0, 0);
     scene.add(starLight);
 
@@ -329,19 +419,19 @@
     scene.add(starMesh);
 
     // --- STREAMING_CHUNK:Constructing Central Star & Planet Geometries ---
-    // Central Star (Soft glowing sphere)
+    // Central Star (Hot blue-white solar sphere with realistic glow)
     const centralStarGroup = new THREE.Group();
     
     const coreGeo = new THREE.SphereGeometry(12, 64, 64);
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0xfffcf5 }); // Bright center
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xdfeeff }); // cooler white-blue center
     const core = new THREE.Mesh(coreGeo, coreMat);
     centralStarGroup.add(core);
 
-    // Additive blending layers for elegant bloom effect
-    const createGlow = (radius, opacity) => {
+    // Additive blending layers for a more natural solar bloom
+    const createGlow = (radius, opacity, color = 0xcfe7ff) => {
       const gGeo = new THREE.SphereGeometry(radius, 64, 64);
       const gMat = new THREE.MeshBasicMaterial({ 
-        color: 0xe6d5b8, 
+        color: color, 
         transparent: true, 
         opacity: opacity,
         blending: THREE.AdditiveBlending,
@@ -350,10 +440,41 @@
       return new THREE.Mesh(gGeo, gMat);
     };
 
-    centralStarGroup.add(createGlow(14, 0.4));
-    centralStarGroup.add(createGlow(18, 0.2));
-    centralStarGroup.add(createGlow(25, 0.08));
+    centralStarGroup.add(createGlow(14, 0.7, 0xdfeeff));
+    centralStarGroup.add(createGlow(18, 0.35, 0xbfdcff));
+    centralStarGroup.add(createGlow(26, 0.14, 0x9bc7ff));
+    centralStarGroup.add(createGlow(34, 0.06, 0x7caef7));
     scene.add(centralStarGroup);
+
+    // Subtle asteroid belt to add a bit of realistic solar-system depth
+    const asteroidGeometry = new THREE.BufferGeometry();
+    const asteroidCount = 1200;
+    const asteroidPositions = new Float32Array(asteroidCount * 3);
+
+    for (let i = 0; i < asteroidCount; i++) {
+      const ringRadius = 135 + Math.random() * 26;
+      const angle = Math.random() * Math.PI * 2;
+      const height = (Math.random() - 0.5) * 10;
+
+      asteroidPositions[i * 3] = Math.cos(angle) * ringRadius;
+      asteroidPositions[i * 3 + 1] = height;
+      asteroidPositions[i * 3 + 2] = Math.sin(angle) * ringRadius;
+    }
+
+    asteroidGeometry.setAttribute('position', new THREE.BufferAttribute(asteroidPositions, 3));
+
+    const asteroidMaterial = new THREE.PointsMaterial({
+      color: 0xb7c0d4,
+      size: 1.6,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false
+    });
+
+    const asteroidBelt = new THREE.Points(asteroidGeometry, asteroidMaterial);
+    asteroidBelt.rotation.x = 0.35;
+    asteroidBelt.rotation.z = 0.08;
+    scene.add(asteroidBelt);
 
     // Array to hold dynamic planet data
     const planets = [];
@@ -362,13 +483,20 @@
     celestialData.forEach((data) => {
       const group = new THREE.Group();
       
-      // Elegant material settings
+      const baseHex = toCssHex(data.color);
+      const accentHex = toCssHex(data.emissive);
+      const planetTexture = createPlanetTexture(baseHex, accentHex, '#f8fafc');
+
+      // Elegant material settings with subtle procedural texture detail
       const mat = new THREE.MeshStandardMaterial({
-        color: data.color,
+        map: planetTexture,
+        color: 0xffffff,
         emissive: data.emissive,
-        emissiveIntensity: 0.6,
-        roughness: 0.3,
-        metalness: 0.1,
+        emissiveIntensity: 0.7,
+        roughness: 0.8,
+        metalness: 0.08,
+        bumpMap: planetTexture,
+        bumpScale: 0.18,
       });
 
       const geo = new THREE.SphereGeometry(data.size, 64, 64);
@@ -393,15 +521,6 @@
       
       scene.add(group);
 
-      planets.push({
-        group: group,
-        mesh: mesh, // For raycasting
-        data: data,
-        angle: angle,
-        baseDistance: data.baseDistance,
-        speed: data.speed
-      });
-      
       // Draw delicate, highly transparent orbit rings
       const ringGeo = new THREE.RingGeometry(data.baseDistance - 0.15, data.baseDistance + 0.15, 128);
       const ringMat = new THREE.MeshBasicMaterial({ 
@@ -414,6 +533,138 @@
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
       scene.add(ring);
+
+      planets.push({
+        group: group,
+        mesh: mesh, // For raycasting
+        ring: ring,
+        data: data,
+        angle: angle,
+        baseDistance: data.baseDistance,
+        speed: data.speed,
+        parentPlanet: null,
+        orbitRadius: data.baseDistance
+      });
+    });
+
+    const moonSpecs = [
+      {
+        parentIndex: 3,
+        name: 'Luna Dusk',
+        subtitle: 'Moon of Becoming',
+        poem: 'Still being shaped',
+        color: 0xddd6cf,
+        emissive: 0x5d5a59,
+        size: 1.5,
+        orbitRadius: 9,
+        speed: 0.018,
+        offset: 0.9
+      },
+      {
+        parentIndex: 4,
+        name: 'Morrow Ring',
+        subtitle: 'Moon of Becoming',
+        poem: 'Still being shaped',
+        color: 0xd7c7b9,
+        emissive: 0x544a43,
+        size: 1.3,
+        orbitRadius: 8.2,
+        speed: 0.02,
+        offset: 0.4
+      },
+      {
+        parentIndex: 4,
+        name: 'Aster Vale',
+        subtitle: 'Moon of Becoming',
+        poem: 'Still being shaped',
+        color: 0xcdd5df,
+        emissive: 0x4d5869,
+        size: 1.2,
+        orbitRadius: 11.5,
+        speed: 0.016,
+        offset: 1.7
+      }
+    ];
+
+    moonSpecs.forEach((spec) => {
+      const parentPlanet = planets[spec.parentIndex];
+      const moonGroup = new THREE.Group();
+      const moonTexture = createPlanetTexture('#dfe7f3', '#8b93a6', '#ffffff');
+      const moonMaterial = new THREE.MeshStandardMaterial({
+        map: moonTexture,
+        color: 0xffffff,
+        emissive: spec.emissive,
+        emissiveIntensity: 0.7,
+        roughness: 0.9,
+        metalness: 0.05,
+        bumpMap: moonTexture,
+        bumpScale: 0.12
+      });
+      const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(spec.size, 32, 32), moonMaterial);
+      moonMesh.userData = { isMoon: true, ...spec };
+      moonGroup.add(moonMesh);
+      scene.add(moonGroup);
+
+      planets.push({
+        group: moonGroup,
+        mesh: moonMesh,
+        ring: null,
+        data: {
+          id: spec.name.toLowerCase().replace(/\s+/g, '-'),
+          name: spec.name,
+          subtitle: spec.subtitle,
+          poem: spec.poem,
+          color: spec.color,
+          emissive: spec.emissive,
+          size: spec.size,
+          baseDistance: 0,
+          speed: spec.speed,
+          isMoon: true
+        },
+        angle: spec.offset,
+        baseDistance: 0,
+        speed: spec.speed,
+        parentPlanet: parentPlanet,
+        orbitRadius: spec.orbitRadius
+      });
+    });
+
+    const dwarfPlanetSpecs = [
+      { name: 'Ceres Veil', subtitle: 'Dwarf World', poem: 'Still being shaped', color: 0xb8a9a4, emissive: 0x4a3e3f, size: 2.2, baseDistance: 145, speed: 0.0045, angle: 0.8 },
+      { name: 'Mira Kesh', subtitle: 'Dwarf World', poem: 'Still being shaped', color: 0x9ca7b7, emissive: 0x2b3445, size: 2.5, baseDistance: 153, speed: 0.004, angle: 2.4 },
+      { name: 'Eirn Fold', subtitle: 'Dwarf World', poem: 'Still being shaped', color: 0xc8b8e2, emissive: 0x3b2f49, size: 2.1, baseDistance: 160, speed: 0.0035, angle: 4.1 },
+      { name: 'Nimble Rock', subtitle: 'Dwarf World', poem: 'Still being shaped', color: 0xb1987b, emissive: 0x44372f, size: 2.4, baseDistance: 169, speed: 0.0031, angle: 5.4 }
+    ];
+
+    dwarfPlanetSpecs.forEach((spec) => {
+      const group = new THREE.Group();
+      const texture = createPlanetTexture('#c2c9d1', '#6a7280', '#f3f4f6');
+      const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        color: 0xffffff,
+        emissive: spec.emissive,
+        emissiveIntensity: 0.8,
+        roughness: 0.9,
+        metalness: 0.05,
+        bumpMap: texture,
+        bumpScale: 0.1
+      });
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(spec.size, 32, 32), material);
+      mesh.userData = { isDwarf: true, ...spec };
+      group.add(mesh);
+      scene.add(group);
+
+      planets.push({
+        group,
+        mesh,
+        ring: null,
+        data: { ...spec, id: spec.name.toLowerCase().replace(/\s+/g, '-') },
+        angle: spec.angle,
+        baseDistance: spec.baseDistance,
+        speed: spec.speed,
+        parentPlanet: null,
+        orbitRadius: spec.baseDistance
+      });
     });
 
     // --- STREAMING_CHUNK:Setting up Raycasting and Interactivity ---
@@ -424,6 +675,8 @@
     let isZoomed = false;
 
     const hoverLabel = document.getElementById('hover-label');
+    const selectionName = document.getElementById('selection-name');
+    const selectionDesc = document.getElementById('selection-desc');
     const poemModal = document.getElementById('poem-modal');
     const btnBack = document.getElementById('btn-back');
 
@@ -444,6 +697,8 @@
         
         hoverLabel.style.opacity = 1;
         hoverLabel.innerHTML = `${hoveredPlanet.data.name}`;
+        selectionName.textContent = hoveredPlanet.data.name;
+        selectionDesc.textContent = hoveredPlanet.data.subtitle;
       } else {
         document.body.style.cursor = 'default';
         hoveredPlanet = null;
@@ -465,6 +720,14 @@
       isZoomed = true;
       hoverLabel.style.opacity = 0;
       controls.enabled = false;
+
+      planets.forEach((planet) => {
+        const isSelected = planet.mesh === targetObj.mesh;
+        planet.mesh.scale.setScalar(isSelected ? 1.22 : 0.96);
+        if (planet.ring) {
+          planet.ring.material.opacity = isSelected ? 0.15 : 0.04;
+        }
+      });
 
       // Update Modal Texts
       document.getElementById('modal-title').innerText = targetObj.data.name;
@@ -507,6 +770,13 @@
     function closePoemModal() {
       poemModal.classList.remove('active');
       
+      planets.forEach((planet) => {
+        planet.mesh.scale.setScalar(1);
+        if (planet.ring) {
+          planet.ring.material.opacity = 0.04;
+        }
+      });
+
       // Return camera flight
       gsap.to(camera.position, {
         x: defaultCameraPos.x,
@@ -549,17 +819,31 @@
       
       // Slow background rotation
       starMesh.rotation.y += 0.02 * delta;
+      asteroidBelt.rotation.y += 0.025 * delta;
 
       // Predictable, serene orbital mechanics (Trigonometry based, no chaotic physics)
       planets.forEach(p => {
-        // Only progress the orbit if we aren't zoomed in reading a poem
         if (!isZoomed) {
-          p.angle += p.speed;
+          if (p.parentPlanet) {
+            const parentPos = p.parentPlanet.group.position;
+            p.angle += p.speed;
+            p.group.position.x = parentPos.x + Math.cos(p.angle) * p.orbitRadius;
+            p.group.position.y = parentPos.y + Math.sin(p.angle * 1.2) * 2.4;
+            p.group.position.z = parentPos.z + Math.sin(p.angle) * p.orbitRadius;
+          } else {
+            p.angle += p.speed;
+            p.group.position.x = Math.cos(p.angle) * p.baseDistance;
+            p.group.position.z = Math.sin(p.angle) * p.baseDistance;
+          }
         }
         
-        // Circular orbit
-        p.group.position.x = Math.cos(p.angle) * p.baseDistance;
-        p.group.position.z = Math.sin(p.angle) * p.baseDistance;
+        const activeScale = hoveredPlanet && hoveredPlanet.mesh === p.mesh ? 1.14 : 1;
+        p.mesh.scale.lerp(new THREE.Vector3(activeScale, activeScale, activeScale), 0.08);
+
+        if (p.ring) {
+          const ringOpacity = hoveredPlanet && hoveredPlanet.mesh === p.mesh ? 0.1 : 0.04;
+          p.ring.material.opacity = THREE.MathUtils.lerp(p.ring.material.opacity, ringOpacity, 0.08);
+        }
         
         // Gentle axis rotation
         p.mesh.rotation.y += 0.005;
