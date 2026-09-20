@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07110c">
+<title>Yggdrasil — A Living Anthology</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --cream: #f5f1e7;
+  --mist: rgba(245, 241, 231, .72);
+  --glass: rgba(7, 17, 12, .62);
+  --line: rgba(245, 241, 231, .20);
+  --gold: #f2c879;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #07110c;
+  color: var(--cream);
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* The generated forest image sits behind the entire anthology. */
+.forest {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(to bottom, rgba(2,8,5,.16), rgba(2,8,5,.42)),
+    url("yggdrasil-forest.png") center center / cover no-repeat;
+  transform: scale(1.015);
+}
+
+.forest::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 45%, transparent 0 22%, rgba(0,0,0,.14) 58%, rgba(0,0,0,.52) 100%),
+    linear-gradient(to bottom, rgba(3,10,6,.08) 0%, rgba(3,10,6,.08) 52%, rgba(3,10,6,.72) 100%);
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .075;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+.intro {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: grid;
+  place-items: end start;
+  text-align: left;
+  padding: 10vh 8vw 13vh;
+  pointer-events: none;
+}
+
+.intro-inner {
+  max-width: 560px;
+  transform: none;
+  padding: 28px 30px 26px;
+  border-left: 1px solid rgba(242, 200, 121, .62);
+  background: linear-gradient(90deg, rgba(3, 13, 7, .54), rgba(3, 13, 7, 0));
+  animation: titleFadeAway 1.4s ease 4.2s forwards;
+}
+
+@keyframes titleFadeAway {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(18px); pointer-events: none; }
+}
+
+.back-link {
+  position: fixed;
+  top: 28px;
+  left: 8vw;
+  z-index: 5;
+  color: rgba(245, 241, 231, .72);
+  text-decoration: none;
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  transition: color .25s ease;
+}
+
+.back-link:hover,
+.back-link:focus-visible { color: var(--cream); }
+
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: .72rem;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: var(--mist);
+}
+
+h1 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 500;
+  font-size: clamp(3.7rem, 9vw, 7.2rem);
+  line-height: .78;
+  letter-spacing: -.045em;
+  text-shadow: 0 4px 35px rgba(0,0,0,.45);
+}
+
+.subtitle {
+  margin: 24px 0 0;
+  max-width: 510px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  line-height: 1.45;
+  color: rgba(245,241,231,.82);
+}
+
+.hint {
+  margin-top: 25px;
+  font-size: .72rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(245,241,231,.56);
+}
+
+/* Invisible interaction layer. The dots feel like fireflies rather than buttons. */
+.firefly-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.firefly {
+  --size: 7px;
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #ffe7a3;
+  box-shadow:
+    0 0 5px 2px rgba(255, 220, 125, .85),
+    0 0 18px 7px rgba(255, 191, 73, .36),
+    0 0 38px 13px rgba(255, 190, 73, .13);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: .42;
+  animation:
+    fireflyPulse var(--pulse, 3.8s) ease-in-out infinite,
+    fireflyDrift var(--drift, 6s) ease-in-out infinite;
+  transition: transform .35s ease, opacity .35s ease, box-shadow .35s ease;
+}
+
+.firefly::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+}
+
+.firefly:hover,
+.firefly:focus-visible {
+  opacity: 1;
+  transform: scale(1.8);
+  outline: none;
+  box-shadow:
+    0 0 7px 3px rgba(255, 231, 163, 1),
+    0 0 28px 11px rgba(255, 191, 73, .55),
+    0 0 55px 18px rgba(255, 190, 73, .22);
+}
+
+.firefly.active {
+  opacity: 1;
+  transform: scale(1.55);
+}
+
+@keyframes fireflyPulse {
+  0%, 100% { opacity: .25; }
+  42% { opacity: .95; }
+  60% { opacity: .45; }
+}
+
+@keyframes fireflyDrift {
+  0%, 100% { margin-top: 0; margin-left: 0; }
+  50% { margin-top: -7px; margin-left: 4px; }
+}
+
+/* Poetry reveal */
+.poem-panel {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(1, 7, 4, .46);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+
+.poem-panel.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.poem-card {
+  width: min(720px, 94vw);
+  max-height: min(82vh, 820px);
+  overflow-y: auto;
+  padding: clamp(30px, 6vw, 64px);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(16,31,22,.91), rgba(4,13,8,.89));
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  transform: translateY(24px) scale(.97);
+  transition: transform .5s cubic-bezier(.2,.8,.2,1);
+}
+
+.poem-panel.open .poem-card {
+  transform: translateY(0) scale(1);
+}
+
+.close {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(245,241,231,.22);
+  border-radius: 50%;
+  background: rgba(5,15,9,.58);
+  color: var(--cream);
+  font-size: 1.35rem;
+  cursor: pointer;
+  transition: .25s ease;
+}
+
+.close:hover {
+  background: rgba(245,241,231,.12);
+  transform: rotate(90deg);
+}
+
+.poem-kicker {
+  color: var(--gold);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .28em;
+}
+
+.poem-title {
+  margin: 9px 0 25px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(2.7rem, 7vw, 4.7rem);
+  line-height: .9;
+  font-weight: 500;
+}
+
+.poem-text {
+  white-space: pre-line;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  line-height: 1.75;
+  color: rgba(245,241,231,.91);
+}
+
+.poem-footer {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(245,241,231,.11);
+  color: rgba(245,241,231,.45);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* Small screen positioning keeps the tree readable and the dots accessible. */
+@media (max-width: 700px) {
+  .intro {
+    padding-top: 13vh;
+    align-items: end;
+    place-items: end center;
+    text-align: center;
+    padding-left: 6vw;
+    padding-right: 6vw;
+    padding-bottom: 12vh;
+  }
+
+  .intro-inner {
+    padding: 24px 20px 22px;
+    border-left: 0;
+    border-top: 1px solid rgba(242, 200, 121, .62);
+    background: linear-gradient(180deg, rgba(3, 13, 7, 0), rgba(3, 13, 7, .5));
+  }
+
+  .back-link { left: 6vw; top: 22px; }
+
+  h1 { font-size: clamp(3.5rem, 18vw, 6rem); }
+
+  .subtitle { margin-left: auto; margin-right: auto; font-size: 1.15rem; }
+
+  .firefly { --size: 8px; }
+
+  .poem-card {
+    border-radius: 18px;
+    padding: 34px 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .firefly, .intro-inner { animation: none; }
+  .poem-panel, .poem-card { transition: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="forest" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<a class="back-link" href="index.html">← Back to Petra</a>
+
+<main class="intro">
+  <div class="intro-inner">
+    <p class="eyebrow">A living anthology</p>
+    <h1>Yggdrasil</h1>
+    <p class="subtitle">
+      Every light carries a story. Wander beneath the branches,
+      and let the forest reveal what has been written.
+    </p>
+    <p class="hint">Follow the lights · click a firefly</p>
+  </div>
+
+  <div class="firefly-layer" aria-label="Poetry points">
+    <!-- Change x/y values to move a poem anywhere on the artwork. -->
+    <button class="firefly" style="--x: 50%; --y: 32%; --pulse: 3.6s; --drift: 5.5s" data-poem="roots" aria-label="Reveal Roots"></button>
+    <button class="firefly" style="--x: 38%; --y: 43%; --pulse: 4.4s; --drift: 6.2s" data-poem="fallen" aria-label="Reveal The Fallen"></button>
+    <button class="firefly" style="--x: 57%; --y: 48%; --pulse: 3.2s; --drift: 5.1s" data-poem="remembrance" aria-label="Reveal Remembrance"></button>
+    <button class="firefly" style="--x: 46%; --y: 57%; --pulse: 4.8s; --drift: 7s" data-poem="hope" aria-label="Reveal Hope"></button>
+    <button class="firefly" style="--x: 63%; --y: 63%; --pulse: 3.9s; --drift: 5.8s" data-poem="autumn" aria-label="Reveal Autumn"></button>
+    <button class="firefly" style="--x: 31%; --y: 70%; --pulse: 5s; --drift: 6.7s" data-poem="silence" aria-label="Reveal Silence"></button>
+    <button class="firefly" style="--x: 70%; --y: 77%; --pulse: 3.5s; --drift: 5.4s" data-poem="time" aria-label="Reveal Time"></button>
+  </div>
+</main>
+
+<section class="poem-panel" id="poemPanel" role="dialog" aria-modal="true" aria-labelledby="poemTitle">
+  <button class="close" id="closePoem" aria-label="Close poem">×</button>
+  <article class="poem-card">
+    <div class="poem-kicker" id="poemKicker">A poem from the tree</div>
+    <h2 class="poem-title" id="poemTitle"></h2>
+    <div class="poem-text" id="poemText"></div>
+    <div class="poem-footer">Return to the branches</div>
+  </article>
+</section>
+
+<script>
+/*
+  Replace the poem text below with your own poems.
+  Each firefly's data-poem value must match one key in this object.
+*/
+const poems = {
+  roots: {
+    title: "Roots",
+    text: `My roots drink sorrow,
+my branches cradle hope,
+yet neither can halt the axe.
+
+Still I remain,
+beneath the changing sky,
+holding what the seasons leave behind.`
+  },
+
+  fallen: {
+    title: "The Fallen",
+    text: `They fell where the earth
+could no longer remember their names.
+
+Yet every spring
+the soil kept whispering
+that nothing given to the earth
+is ever truly lost.`
+  },
+
+  remembrance: {
+    title: "Remembrance",
+    text: `Some memories do not fade.
+They settle quietly beneath the bark,
+becoming rings,
+becoming roots,
+becoming part of who we are.`
+  },
+
+  hope: {
+    title: "Hope",
+    text: `Even beneath a heavy sky,
+one leaf turns toward the light.
+
+Not because the darkness vanished,
+but because something living
+refused to stop reaching.`
+  },
+
+  autumn: {
+    title: "Autumn",
+    text: `All good comes to a bitter end.
+The trees shed their precious leaves,
+and the birds fly for better miles
+in a desperate search for home.
+
+Still,
+the human heart remains
+beautifully naive,
+waiting for spring.`
+  },
+
+  silence: {
+    title: "Silence",
+    text: `The forest says nothing,
+yet somehow
+it understands.
+
+Between the rustling leaves
+there are words
+we only hear
+when we stop speaking.`
+  },
+
+  time: {
+    title: "Though Our Time Is Short",
+    text: `A flower you are,
+heart white as snow.
+
+A smile of gold
+makes me feel whole
+and never alone.
+
+Though our time was short,
+you showed me home.
+
+And somewhere beyond the night,
+your sunshine remains.`
+  }
+};
+
+const panel = document.getElementById("poemPanel");
+const title = document.getElementById("poemTitle");
+const text = document.getElementById("poemText");
+const kicker = document.getElementById("poemKicker");
+const close = document.getElementById("closePoem");
+const fireflies = document.querySelectorAll(".firefly");
+
+function openPoem(key, source) {
+  const poem = poems[key];
+  if (!poem) return;
+
+  fireflies.forEach(f => f.classList.remove("active"));
+  if (source) source.classList.add("active");
+
+  title.textContent = poem.title;
+  text.textContent = poem.text;
+  kicker.textContent = "A poem from the tree";
+
+  panel.classList.add("open");
+  document.body.style.overflow = "hidden";
+  close.focus();
+}
+
+function closePoem() {
+  panel.classList.remove("open");
+  document.body.style.overflow = "";
+  fireflies.forEach(f => f.classList.remove("active"));
+}
+
+fireflies.forEach(firefly => {
+  firefly.addEventListener("click", () => {
+    openPoem(firefly.dataset.poem, firefly);
+  });
+});
+
+close.addEventListener("click", closePoem);
+
+panel.addEventListener("click", event => {
+  if (event.target === panel) closePoem();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && panel.classList.contains("open")) {
+    closePoem();
+  }
+});
+</script>
+</body>
+</html>
