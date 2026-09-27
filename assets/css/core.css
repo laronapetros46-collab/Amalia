@@ -1,0 +1,572 @@
+/* ============================================================
+   PETRA — CORE
+   SHARED ACROSS EVERY PAGE:
+   DESIGN TOKENS · THEME SYSTEM · ENTRY MODAL · NAV · TURTLE
+============================================================ */
+
+
+/* ============================================================
+   01 — DESIGN TOKENS
+   Night is the site's original mood (dim reading room).
+   Day is the same room with the morning light let in.
+   Everything below is a variable so both themes,
+   and every page, pull from one source of truth.
+============================================================ */
+
+:root {
+
+    /* type */
+    --font-display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+    --font-body: 'Quicksand', 'Segoe UI', Verdana, sans-serif;
+
+    /* motion */
+    --ease: cubic-bezier(.4, 0, .2, 1);
+    --speed-theme: .6s;
+    --speed-ui: .3s;
+
+    /* shared accents (same in both themes) */
+    --gold: #D4A373;
+    --gold-soft: #E8C9A0;
+
+    /* radii */
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-pill: 999px;
+}
+
+
+/* ---- NIGHT (default) --------------------------------------
+   The dim, candlelit room. Original Petra mood.
+------------------------------------------------------------ */
+
+:root,
+:root[data-theme="night"] {
+
+    --bg-image: url("../../images/cozy-nook.jfif");
+    --bg-overlay: linear-gradient(rgba(15, 13, 10, .78), rgba(15, 13, 10, .86));
+
+    --ink: #F5F3EE;
+    --ink-soft: #D8D2CB;
+    --ink-faint: #A9A296;
+
+    --panel: rgba(245, 242, 230, .9);
+    --panel-strong: rgba(20, 17, 12, .55);
+    --panel-border: rgba(255, 255, 255, .18);
+
+    --surface: #17140F;
+    --surface-raised: rgba(255, 255, 255, .06);
+}
+
+
+/* ---- DAY ----------------------------------------------------
+   The same room, lit by the window instead of candlelight.
+------------------------------------------------------------ */
+
+:root[data-theme="day"] {
+
+    --bg-image: url("../../images/library.jpg");
+    --bg-overlay: linear-gradient(rgba(250, 246, 236, .55), rgba(250, 246, 236, .74));
+
+    --ink: #2C2620;
+    --ink-soft: #4E463C;
+    --ink-faint: #8A8072;
+
+    --panel: rgba(255, 255, 255, .82);
+    --panel-strong: rgba(255, 255, 255, .65);
+    --panel-border: rgba(60, 50, 35, .15);
+
+    --surface: #FBF7EE;
+    --surface-raised: rgba(0, 0, 0, .035);
+}
+
+
+/* ============================================================
+   02 — BASE
+============================================================ */
+
+body {
+
+    background-image: var(--bg-overlay), var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+
+    color: var(--ink);
+
+    font-family: var(--font-body);
+
+    transition:
+        background-color var(--speed-theme) var(--ease),
+        color var(--speed-theme) var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        animation-duration: .001ms !important;
+        transition-duration: .001ms !important;
+    }
+
+}
+
+
+/* ============================================================
+   03 — SITE NAV
+   Small fixed control cluster: theme toggle + guest identity.
+============================================================ */
+
+.site-nav {
+
+    position: fixed;
+    top: 22px;
+    right: 22px;
+    z-index: 500;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+}
+
+.theme-toggle {
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+
+    border: 1px solid var(--panel-border);
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: .85rem;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: transform var(--speed-ui) var(--ease),
+                background var(--speed-ui) var(--ease);
+
+}
+
+.theme-toggle:hover {
+    transform: translateY(-2px);
+}
+
+.theme-toggle .icon {
+
+    display: inline-block;
+    transition: transform var(--speed-theme) var(--ease);
+
+}
+
+[data-theme="day"] .theme-toggle .icon {
+    transform: rotate(0deg);
+}
+
+[data-theme="night"] .theme-toggle .icon {
+    transform: rotate(-25deg);
+}
+
+.guest-chip {
+
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+
+    border: 1px solid var(--panel-border);
+    background: var(--panel-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    font-size: .85rem;
+    color: var(--ink-soft);
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+}
+
+.guest-chip button {
+
+    border: none;
+    background: none;
+    color: var(--gold);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: .8rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+}
+
+
+/* ============================================================
+   04 — ENTRY MODAL
+   Asked once per browser. Sets a name and a starting mood.
+============================================================ */
+
+.entry-veil {
+
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+
+    background: rgba(10, 9, 7, .72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity .5s var(--ease);
+
+}
+
+.entry-veil.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.entry-card {
+
+    width: min(520px, 100%);
+
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+
+    padding: 40px 36px;
+
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .45);
+
+    transform: translateY(18px) scale(.98);
+    transition: transform .5s var(--ease);
+
+}
+
+.entry-veil.active .entry-card {
+    transform: translateY(0) scale(1);
+}
+
+.entry-card .eyebrow {
+
+    font-family: var(--font-body);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--gold);
+    margin-bottom: 10px;
+
+}
+
+.entry-card h2 {
+
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    margin-bottom: 10px;
+
+}
+
+.entry-card p.lead {
+
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+    line-height: 1.6;
+    font-size: .95rem;
+
+}
+
+.entry-card label.field-label {
+
+    display: block;
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+
+}
+
+.entry-card input[type="text"] {
+
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--panel-border);
+    background: var(--surface-raised);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    margin-bottom: 22px;
+
+}
+
+.entry-card input[type="text"]:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.nook-options {
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 26px;
+
+}
+
+.nook-option {
+
+    position: relative;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color var(--speed-ui) var(--ease),
+                transform var(--speed-ui) var(--ease);
+
+}
+
+.nook-option img {
+    display: block;
+    width: 100%;
+    height: 92px;
+    object-fit: cover;
+}
+
+.nook-option span {
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 6px 10px;
+    font-size: .75rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(0, 0, 0, .75));
+
+}
+
+.nook-option:hover {
+    transform: translateY(-2px);
+}
+
+.nook-option.selected {
+    border-color: var(--gold);
+}
+
+.entry-card button.entry-submit {
+
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--gold);
+    color: #241C12;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background var(--speed-ui) var(--ease),
+                transform var(--speed-ui) var(--ease);
+
+}
+
+.entry-card button.entry-submit:hover {
+    background: var(--gold-soft);
+    transform: translateY(-2px);
+}
+
+.entry-card button.entry-submit:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+
+/* ============================================================
+   05 — PERSONAL GREETING
+   Slots into a page's header once a guest has signed in.
+============================================================ */
+
+.personal-greeting {
+
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 20px;
+    border-radius: var(--radius-pill);
+
+    background: var(--panel-strong);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    font-size: .9rem;
+    color: var(--ink-soft);
+
+    opacity: 0;
+    transform: translateY(8px);
+    animation: greetingRise .7s var(--ease) .15s forwards;
+
+}
+
+@keyframes greetingRise {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ============================================================
+   06 — ONE ORCHESTRATED ENTRANCE
+   The library of cards settles into place a single time,
+   right after the page (and modal) resolve. Nothing about
+   this repeats on scroll — it happens once, like a curtain
+   opening.
+============================================================ */
+
+.settles {
+    opacity: 0;
+    transform: translateY(22px);
+}
+
+.settles.in {
+    animation: settleIn .7s var(--ease) forwards;
+}
+
+@keyframes settleIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ============================================================
+   07 — THE TURTLE
+   A slow, deliberate companion. It only ever moves in
+   response to you: it surfaces once you've read a while,
+   and carries you back to the top when asked. A quiet joke
+   for a site about taking things one season at a time.
+============================================================ */
+
+.turtle-button {
+
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 400;
+
+    width: 58px;
+    height: 58px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(154, 214, 200, .35);
+    border-radius: 50%;
+
+    /* Deep-ocean backdrop, after "The World Turtle's Almanac" —
+       a dim teal gradient standing in for light shafts in water. */
+    background:
+        repeating-linear-gradient(
+            100deg,
+            rgba(255, 255, 255, .05) 0px,
+            rgba(255, 255, 255, .05) 1px,
+            transparent 1px,
+            transparent 7px
+        ),
+        radial-gradient(120% 130% at 30% 20%, #1B6E72 0%, #0E4A54 45%, #082F38 100%);
+
+    box-shadow: 0 10px 26px rgba(3, 20, 24, .5),
+                inset 0 0 0 1px rgba(255, 255, 255, .04);
+
+    cursor: pointer;
+
+    opacity: 0;
+    transform: translateY(20px) scale(.8);
+    pointer-events: none;
+
+    transition: opacity .4s var(--ease),
+                transform .4s var(--ease);
+
+}
+
+.turtle-button.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.turtle-button svg {
+    width: 40px;
+    height: 40px;
+}
+
+/* Shell mandala */
+
+.turtle-button .shell-ring {
+    fill: none;
+    stroke: rgba(232, 201, 160, .55);
+    stroke-width: .6;
+}
+
+.turtle-button .shell-disc {
+    fill: #2F7A6B;
+    stroke: var(--gold-soft);
+    stroke-width: 1;
+}
+
+.turtle-button .shell-spoke {
+    stroke: rgba(11, 47, 43, .55);
+    stroke-width: .9;
+}
+
+.turtle-button .shell-spiral {
+    fill: none;
+    stroke: rgba(11, 47, 43, .6);
+    stroke-width: 1.1;
+}
+
+.turtle-button .flipper {
+    fill: #5FA491;
+}
+
+.turtle-button .head {
+    fill: #5FA491;
+}
+
+.turtle-button .eye {
+    fill: #0B2F2B;
+}
+
+.turtle-button:hover svg {
+    animation: turtleAmble .6s var(--ease);
+}
+
+@keyframes turtleAmble {
+    0%   { transform: translateX(0) rotate(0deg); }
+    30%  { transform: translateX(-2px) rotate(-4deg); }
+    60%  { transform: translateX(2px) rotate(4deg); }
+    100% { transform: translateX(0) rotate(0deg); }
+}
+
+.turtle-button.departing svg {
+    animation: turtleDepart .7s var(--ease) forwards;
+}
+
+@keyframes turtleDepart {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-90px) rotate(-10deg); opacity: 0; }
+}

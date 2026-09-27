@@ -8,6 +8,10 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 
 /* ==========================================
    BODY
@@ -15,29 +19,7 @@
 
 body {
 
-    background:
-        linear-gradient(
-            rgba(17, 17, 17, .65),
-            rgba(17, 17, 17, .75)
-        ),
-        url("https://tse2.mm.bing.net/th/id/OIP.4UQxbKYwt-LiugSJUWRvngHaE8?r=0&rs=1&pid=ImgDetMain&o=7&rm=3");
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-
-    color: #F5F3EE;
-
-    font-family:
-        'Inter',
-        Verdana,
-        Geneva,
-        Tahoma,
-        sans-serif;
-
     min-height: 100vh;
-
     overflow-x: hidden;
 }
 
@@ -409,6 +391,37 @@ header h1 {
 
     line-height: 1.8;
 
+}
+
+.thought-space {
+    background: rgba(242, 237, 255, .9);
+}
+
+.thought-space::before {
+    background: linear-gradient(90deg, #7C3AED, #22C55E);
+}
+
+.thought-space h4 {
+    background: linear-gradient(90deg, #6D28D9, #16A34A);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+.thought-space .watermark {
+    color: #8B5CF6;
+}
+
+.thought-space .dev-button {
+    margin-top: 18px;
+    display: inline-block;
+    font-size: .82rem;
+    padding: 10px 20px;
+}
+
+.thought-space:hover {
+    box-shadow: 0 0 32px rgba(124, 58, 237, .28);
 }
 
 
